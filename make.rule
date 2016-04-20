@@ -1,0 +1,90 @@
+.PHONY: all clean
+
+MKDIR = mkdir
+MKDIRFLAGS = -p
+RM = rm
+RMFLAGS = -fr
+
+OPENWRT=~/works/dragino2-BB/barrier_breaker
+STAGING_DIR=$(OPENWRT)/staging_dir
+#TOOLCHAIN=$(STAGING_DIR)/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-
+
+CROSS_COMPILE := $(TOOLCHAIN)
+
+ifeq ("$(HOST)", "y")
+CROSS_COMPILE = 
+endif
+
+CC = $(CROSS_COMPILE)gcc 
+CPP = $(CROSS_COMPILE)g++ 
+CFLAGS = 
+AR = $(CROSS_COMPILE)ar
+ARFLAGS = crs
+
+DIR_OBJS = $(BUILD_DIR)
+DIR_DEPS = $(BUILD_DIR)/deps
+DIR_LIBS = $(BUILDS)/libs
+DIR_EXES = $(BUILDS)
+DIRS = $(DIR_OBJS) $(DIR_DEPS) $(DIR_LIBS)  
+
+
+ifneq ("$(EXE)", "")
+EXE := $(addprefix $(DIR_EXES)/, $(EXE))
+endif
+
+ifneq ("$(LIB)", "")
+LIB := $(addprefix $(DIR_LIBS)/, $(LIB))
+endif
+
+SRCS = $(wildcard *.cpp)
+OBJS = $(SRCS:.cpp=.o)
+OBJS := $(addprefix $(DIR_OBJS)/, $(OBJS))
+DEPS = $(SRCS:.cpp=.dep)
+DEPS := $(addprefix $(DIR_DEPS)/, $(DEPS))
+
+
+ifeq ("$(wildcard $(DIR_OBJS))", "")
+DEP_DIR_OBJS := $(DIR_OBJS)
+endif
+ifeq ("$(wildcard $(DIR_DEPS))", "")
+DEP_DIR_DEPS := $(DIR_DEPS)
+endif
+ifeq ("$(wildcard $(DIR_LIBS))", "")
+DEP_DIR_LIBS := $(DIR_LIBS)
+endif
+
+all: $(EXE) $(LIB)
+
+ifneq ($(MAKECMDGOALS), clean)
+include $(DEPS)
+endif
+
+ifneq ("$(INCLUDE_DIRS)", "")
+INCLUDE_DIRS := $(strip $(INCLUDE_DIRS))
+INCLUDE_DIRS := $(addprefix -I, $(INCLUDE_DIRS))
+endif
+ifneq ("$(LINK_LIBS)", "")
+LINK_LIBS := $(strip $(LINK_LIBS))
+LIB_ALL := $(notdir $(wildcard $(DIR_LIBS)/*))
+LIB_FILTERED := $(addsuffix %, $(addprefix lib, $(LINK_LIBS)))
+$(eval DEP_LIBS = $(filter $(LIB_FILTERED), $(LIB_ALL)))
+DEP_LIBS := $(addprefix $(DIR_LIBS)/, $(DEP_LIBS))
+LINK_LIBS := $(addprefix -l, $(LINK_LIBS))
+endif
+
+$(DIRS):
+	$(MKDIR) $(MKDIRFLAGS) $@
+$(EXE): $(OBJS) $(DEP_LIBS)
+	$(CPP) $(CFLAGS) -L$(DIR_LIBS) -o $@ $(filter %.o, $^) $(LINK_LIBS)
+$(LIB): $(DEP_DIR_LIBS) $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(filter %.o, $^)
+$(DIR_OBJS)/%.o: $(DEP_DIR_OBJS) %.cpp
+	$(CPP) $(CFLAGS) $(INCLUDE_DIRS) -o $@ -c $(filter %.cpp, $^)
+$(DIR_DEPS)/%.dep: $(DEP_DIR_DEPS) %.cpp
+	@echo "Creating $@ ..."
+	@set -e ; \
+	$(RM) $(RMFLAGS) $@.tmp ; \
+	$(CPP) $(INCLUDE_DIRS) -E -MM $(filter %.cpp, $^) > $@.tmp ; \
+	sed 's,\(.*\)\.o[ :]*,$(DIR_OBJS)/\1.o $@: ,g' < $@.tmp > $@ ; \
+	$(RM) $(RMFLAGS) $@.tmp
+
