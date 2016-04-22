@@ -17,7 +17,7 @@ endif
 
 CC = $(CROSS_COMPILE)gcc 
 CPP = $(CROSS_COMPILE)g++ 
-CFLAGS = 
+CFLAGS =
 AR = $(CROSS_COMPILE)ar
 ARFLAGS = crs
 
