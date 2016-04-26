@@ -3,6 +3,7 @@
 
 #define TRAITS_DEBUG
 #define TRAITS_INFO
+#define TRAITS_LOG
 
 
 #endif
