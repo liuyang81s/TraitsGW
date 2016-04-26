@@ -1,5 +1,6 @@
-#include "http_download_domain.h"
 #include <iostream>
+
+#include "http.h"
 
 HttpDownloadDomain::HttpDownloadDomain(bool* cancel)
 {

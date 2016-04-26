@@ -1,9 +1,9 @@
-
-#ifndef __HTTP_DOWNLOAD_DOMAIN
-#define __HTTP_DOWNLOAD_DOMAIN
+#ifndef TRAITS_HTTP_H
+#define TRAITS_HTTP_H
 
 #include <string>
-#include "curl/curl.h"
+
+#include <curl/curl.h>
 
 class HttpDownloadDomain
 {

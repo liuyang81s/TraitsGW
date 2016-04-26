@@ -16,9 +16,12 @@ class TRAITS_GW
 {
 public:
 	TRAITS_GW();
+	TRAITS_GW(string url);
 	~TRAITS_GW();	
 
 	bool init();
+	bool hb();
+	bool data();
 
 protected:
 
