@@ -5,9 +5,10 @@ MKDIRFLAGS = -p
 RM = rm
 RMFLAGS = -fr
 
-OPENWRT=~/works/dragino2-BB/barrier_breaker
+#OPENWRT=~/works/dragino2-BB/barrier_breaker
+OPENWRT=~/works/openwrt/dragino2-BB-IoT/barrier_breaker
 STAGING_DIR=$(OPENWRT)/staging_dir
-#TOOLCHAIN=$(STAGING_DIR)/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-
+TOOLCHAIN=$(STAGING_DIR)/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mips-openwrt-linux-
 
 CROSS_COMPILE := $(TOOLCHAIN)
 

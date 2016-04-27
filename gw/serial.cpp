@@ -21,7 +21,7 @@ bool SERIAL_RUNNING = false;
 void dev_log(const char* prefix, uint8_t *buf, int size)    
 {
 #ifdef TRAITS_DEBUG
-	cout << prefix;
+	cout << prefix << ": ";
     cout.fill('0');
     for(int i = 0; i < size; i++)
 		cout << setw(2) << hex << (uint32_t)buf[i] << ' ';
@@ -57,7 +57,7 @@ void* serial_routine(void* arg)
 		if(selector.fd_isset(devfd, READ)) {   
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 			if(devbytes <= 0) {
-				cout << DEVNAME << "closed" << endl;
+				cout << DEVNAME << " closed" << endl;
 				//todo: log
 				close(devfd);
 				selector.fd_clr(devfd, READ);

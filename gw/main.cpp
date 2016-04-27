@@ -31,7 +31,9 @@ int main()
 		return -rc;
 	}
 
-	sleep(100 * 30);
+	sleep(100 * 3);
+	//sleep(10);
+
 	SERIAL_RUNNING = false;
 
 	pthread_join(t_serial, NULL);
