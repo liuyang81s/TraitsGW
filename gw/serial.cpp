@@ -9,12 +9,12 @@
 #include "serial.h"
 #include "main.h"
 #include "unlock_ringbuffer.h"
+#include "dev.h"
 
 using namespace std;
 
 #define DEVBUF_SIZE 128
 #define RINGBUFFER_SIZE 2048
-
 
 static const char DEVNAME[] = "/dev/ttyATH0";
 static uint8_t devbuf[DEVBUF_SIZE];
@@ -37,7 +37,7 @@ void* serial_routine(void* arg)
 	cout << "serial_thread running" << endl;	
 
 	UnlockRingBuffer rbuffer(RINGBUFFER_SIZE);
-	if(!unlockQueue.Init()) {
+	if(!rbuffer.init()) {
 		cout << "ringbuffer init failed, serial thread exit" << endl;
 		//todo: log
 		return 0;
@@ -54,6 +54,8 @@ void* serial_routine(void* arg)
 
 	Selector selector;
 	selector.set_fd(devfd, READ);
+
+	Device* dev = new TestDevice();
 
 	SERIAL_RUNNING = true;
 	while(SERIAL_RUNNING) {
@@ -74,8 +76,8 @@ void* serial_routine(void* arg)
 				break;
 				//todo: reopen dev
 			} else {
-				rbuffer.Put(devbuf, devbytes);
-				
+				rbuffer.put(devbuf, devbytes);
+			    dev->make_packet(rbuffer.get_data());	
 				dev_log(DEVNAME, devbuf, devbytes);				
 			}
 			
@@ -83,6 +85,8 @@ void* serial_routine(void* arg)
 		
 	}
 	
+	delete dev;
+
 	cout << "serial thread exit" << endl;
 	//todo: log	
 
