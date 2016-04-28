@@ -9,14 +9,15 @@ public:
      UnlockRingBuffer(int nSize);
      virtual ~UnlockRingBuffer();
   
-     bool Init();
+     bool init();
   
-     uint32_t Put(const uint8_t *pBuffer, uint32_t nLen);
-     uint32_t Get(uint8_t *pBuffer, uint32_t nLen);
+     uint32_t put(const uint8_t *pBuffer, uint32_t nLen);
+     uint32_t get(uint8_t *pBuffer, uint32_t nLen);
   
-     inline void Clean() { m_nIn = m_nOut = 0; }
-     inline uint32_t GetDataLen() const { return  m_nIn - m_nOut; }
-  
+     inline void clean() { m_nIn = m_nOut = 0; }
+     inline uint32_t data_len() const { return  m_nIn - m_nOut; }
+	 uint8_t* get_data();
+
 private:
      inline bool is_power_of_2(uint32_t n) { return (n != 0 && ((n & (n - 1)) == 0)); };
      inline uint32_t roundup_power_of_two(uint32_t val);

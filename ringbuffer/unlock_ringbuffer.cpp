@@ -27,7 +27,7 @@ UnlockRingBuffer::~UnlockRingBuffer()
     }
 }
  
-bool UnlockRingBuffer::Init()
+bool UnlockRingBuffer::init()
 {
     m_pBuffer = new uint8_t[m_nSize];
     if (!m_pBuffer)
@@ -54,7 +54,15 @@ uint32_t UnlockRingBuffer::roundup_power_of_two(uint32_t val)
 }
 
 
-uint32_t UnlockRingBuffer::Put(const uint8_t *buffer, uint32_t len)
+uint8_t* UnlockRingBuffer::get_data()
+{ 
+	if(m_nSize <= 0)
+		return NULL;
+	else
+		return m_pBuffer + (m_nOut & (m_nSize - 1)); 
+}
+
+uint32_t UnlockRingBuffer::put(const uint8_t *buffer, uint32_t len)
 {
     uint32_t l;
  
@@ -84,7 +92,7 @@ uint32_t UnlockRingBuffer::Put(const uint8_t *buffer, uint32_t len)
     return len;
 }  
 
-uint32_t UnlockRingBuffer::Get(uint8_t *buffer, uint32_t len)
+uint32_t UnlockRingBuffer::get(uint8_t *buffer, uint32_t len)
 {
     uint32_t l;
  
