@@ -2,6 +2,8 @@
 #define TRAITS_GW_H
 
 #include <string>
+#include <stdint.h>
+
 #include "serial.h"
 
 using namespace std;
@@ -9,7 +11,6 @@ using namespace std;
 extern bool GW_RUNNING;
 
 void* gw_run(void* arg);
-
 
 class TRAITS_GW
 {
@@ -19,8 +20,8 @@ public:
 	~TRAITS_GW();	
 
 	bool init();
-	bool hb();
-	bool data();
+	bool heartbeat();
+	bool report(uint8_t *packet, int size);
 
 protected:
 

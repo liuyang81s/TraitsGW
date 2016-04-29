@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
+#include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdint.h>
 #include <json-c/json.h>
 
 #include "main.h"
@@ -83,7 +85,7 @@ bool TRAITS_GW::init()
 	}
 }
 
-bool TRAITS_GW::hb()
+bool TRAITS_GW::heartbeat()
 {
 	static string hb_url = "refresh.do";
 
@@ -114,19 +116,32 @@ bool TRAITS_GW::hb()
 
 }
 
-bool TRAITS_GW::data()
+static void hex2str(uint8_t* str, uint8_t* hex, int size)
+{
+	for(int i = 0; i < size; i++) {
+		sprintf((char*)str + i * 3, "%x ", hex[i]);
+	}	
+} 
+
+
+bool TRAITS_GW::report(uint8_t *packet, int size)
 {
 	static string data_url = "data.do";
 
-	json_object* hb_object;
-    hb_object = json_object_new_object();
-    json_object_object_add(hb_object, "id", json_object_new_string(gage_id.c_str()));
-    json_object_object_add(hb_object, "data", json_object_new_string("09 33 0A 20"));
-    json_object_object_add(hb_object, "time", json_object_new_string("2015-09-17T11:07:47.926+08:00"));
-    json_object_object_add(hb_object, "isAnalysis", json_object_new_string("1"));
+	static uint8_t packet_str[PACKET_SIZE * 3 + 1];
+	memset(packet_str, 0, PACKET_SIZE * 3 + 1);
+	
+	hex2str(packet_str, packet, size);
+
+	json_object* data_object;
+    data_object = json_object_new_object();
+    json_object_object_add(data_object, "id", json_object_new_string(gage_id.c_str()));
+    json_object_object_add(data_object, "data", json_object_new_string((const char *)packet_str));
+    json_object_object_add(data_object, "time", json_object_new_string("2015-09-17T11:07:47.926+08:00"));
+    json_object_object_add(data_object, "isAnalysis", json_object_new_string("1"));
 
 	
-    string strPost(json_object_to_json_string(hb_object));
+    string strPost(json_object_to_json_string(data_object));
 #ifdef TRAITS_DEBUG
     cout << strPost << endl;
 #endif
@@ -137,7 +152,7 @@ bool TRAITS_GW::data()
         HttpDownloadDomain hdd(&i);
         hdd.Post(strUrl, strPost, strResponse);
 
-    json_object_put(hb_object);
+    json_object_put(data_object);
     
 if(strResponse.empty()){
         cout << "response empty" << endl;
