@@ -33,7 +33,7 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 
 void* serial_run(void* arg)
 {
-	cout << "serial_thread running" << endl;	
+	cout << "serial thread running" << endl;	
 	
 	Selector selector;
 

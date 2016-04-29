@@ -109,7 +109,7 @@ bool TRAITS_GW::hb()
         return false;
     } else {
         cout << "strResponse=" << strResponse << endl;
-	return true;
+		return true;
 	}
 
 }
@@ -161,6 +161,7 @@ void* gw_run(void* arg)
 		goto out;
 	}
 
+	GW_RUNNING = true;
 	while(GW_RUNNING) {
 		static uint8_t packet_buf[PACKET_SIZE];
 		int packet_len = 0;
@@ -169,11 +170,14 @@ void* gw_run(void* arg)
 		while(true) {
 			if(rbuffer->size() > 0) {
 				packet_len = dev->recognize_packet(rbuffer->get_data()); 				
+
+				//找到合法报文时，取出，继续检测
+				//否则，阻塞，等待被唤醒
 				if(packet_len > 0) {
 					memset(packet_buf, 0, packet_len);
 					rbuffer->get(packet_buf, packet_len);
+					break;
 				}
-				break;
 			}
 			pthread_cond_wait(&rb_cond, &rb_mutex);
 		}
