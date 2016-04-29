@@ -10,7 +10,6 @@ typedef enum {
 	NONE,
 	ODD,
 	EVEN,
-	INVALID,
 }PARITY_MODE;
 
 
@@ -20,7 +19,7 @@ public:
 	Device();
 	virtual ~Device();
 		
-	virtual void make_packet(uint8_t* buf) = 0;
+	virtual int recognize_packet(uint8_t* buf) = 0;
 	
 protected:
 	string dev_name;
@@ -41,7 +40,7 @@ public:
 	TestDevice();
 	virtual ~TestDevice();
 	
-	void make_packet(uint8_t* buf);
+	int recognize_packet(uint8_t* buf);
 
 protected:
 

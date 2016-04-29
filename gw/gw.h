@@ -2,14 +2,13 @@
 #define TRAITS_GW_H
 
 #include <string>
+#include "serial.h"
 
 using namespace std;
 
-typedef enum{
-	LISTEN,
-	POLL,
-	INVALID,
-}WORK_MODE;
+extern bool GW_RUNNING;
+
+void* gw_run(void* arg);
 
 
 class TRAITS_GW
@@ -35,7 +34,6 @@ protected:
 	string server_url;
 	WORK_MODE mode;
 	int send_type;
-	
 };
 
 

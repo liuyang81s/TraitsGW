@@ -15,7 +15,7 @@ public:
      uint32_t get(uint8_t *pBuffer, uint32_t nLen);
   
      inline void clean() { m_nIn = m_nOut = 0; }
-     inline uint32_t data_len() const { return  m_nIn - m_nOut; }
+     inline uint32_t size() const { return  m_nIn - m_nOut; }
 	 uint8_t* get_data();
 
 private:

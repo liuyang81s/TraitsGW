@@ -8,13 +8,12 @@
 #include "selector.h"
 #include "serial.h"
 #include "main.h"
-#include "unlock_ringbuffer.h"
 #include "dev.h"
 
-using namespace std;
-
 #define DEVBUF_SIZE 128
-#define RINGBUFFER_SIZE 2048
+
+
+using namespace std;
 
 static const char DEVNAME[] = "/dev/ttyATH0";
 static uint8_t devbuf[DEVBUF_SIZE];
@@ -32,32 +31,23 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 #endif
 }
 
-void* serial_routine(void* arg)
+void* serial_run(void* arg)
 {
 	cout << "serial_thread running" << endl;	
-
-	UnlockRingBuffer rbuffer(RINGBUFFER_SIZE);
-	if(!rbuffer.init()) {
-		cout << "ringbuffer init failed, serial thread exit" << endl;
-		//todo: log
-		return 0;
-	}
-
-	memset(devbuf, 0, DEVBUF_SIZE);
+	
+	Selector selector;
 
 	int devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
         cout << "Open " << DEVNAME << "failed" << endl;
 		//todo: log
-        return 0;
+        goto out;
     } 
 
-	Selector selector;
 	selector.set_fd(devfd, READ);
+	memset(devbuf, 0, DEVBUF_SIZE);
 
-	Device* dev = new TestDevice();
-
-	SERIAL_RUNNING = true;
+	SERIAL_RUNNING = true;	
 	while(SERIAL_RUNNING) {
 		if(selector.select(NULL) == -1) {
 			cout << "select error" << endl;
@@ -76,8 +66,10 @@ void* serial_routine(void* arg)
 				break;
 				//todo: reopen dev
 			} else {
-				rbuffer.put(devbuf, devbytes);
-			    dev->make_packet(rbuffer.get_data());	
+				pthread_mutex_lock(&rb_mutex);
+				rbuffer->put(devbuf, devbytes);
+				pthread_cond_signal(&rb_cond);
+				pthread_mutex_unlock(&rb_mutex);
 				dev_log(DEVNAME, devbuf, devbytes);				
 			}
 			
@@ -85,8 +77,7 @@ void* serial_routine(void* arg)
 		
 	}
 	
-	delete dev;
-
+out:
 	cout << "serial thread exit" << endl;
 	//todo: log	
 

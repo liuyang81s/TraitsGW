@@ -22,7 +22,7 @@ TestDevice::~TestDevice()
 	
 }
 
-void TestDevice::make_packet(uint8_t* buf)
+int TestDevice::recognize_packet(uint8_t* buf)
 {
 
 }

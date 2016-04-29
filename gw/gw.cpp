@@ -1,13 +1,19 @@
 #include <iostream>
 #include <string>
+#include <pthread.h>
+#include <string.h>
 #include <json-c/json.h>
-
 
 #include "main.h"
 #include "http.h"
+#include "dev.h"
 #include "gw.h"
 
+#define PACKET_SIZE 256
+
 using namespace std;
+
+bool GW_RUNNING = false;
 
 TRAITS_GW::TRAITS_GW()
 {
@@ -140,5 +146,49 @@ if(strResponse.empty()){
         cout << "strResponse=" << strResponse << endl;
 		return true;
 	}
+}
+
+void* gw_run(void* arg)
+{
+	cout << "gw thread running" << endl;		
+
+	TRAITS_GW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
+
+	Device* dev = new TestDevice();
+	if(NULL == dev) {
+		//todo: log
+		cout << "mem allocation failed" << endl;
+		goto out;
+	}
+
+	while(GW_RUNNING) {
+		static uint8_t packet_buf[PACKET_SIZE];
+		int packet_len = 0;
+		
+		pthread_mutex_lock(&rb_mutex);
+		while(true) {
+			if(rbuffer->size() > 0) {
+				packet_len = dev->recognize_packet(rbuffer->get_data()); 				
+				if(packet_len > 0) {
+					memset(packet_buf, 0, packet_len);
+					rbuffer->get(packet_buf, packet_len);
+				}
+				break;
+			}
+			pthread_cond_wait(&rb_cond, &rb_mutex);
+		}
+		pthread_mutex_unlock(&rb_mutex);
+		
+		//todo: packet to json, send to server
+		cout << "packet to json, send to server" << endl;
+	}
+
+	delete dev;
+
+out:
+	cout << "gw thread exit" << endl;
+	//todo: log
+	
+	return 0;
 }
 
