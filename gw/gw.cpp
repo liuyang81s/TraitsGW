@@ -17,7 +17,7 @@ using namespace std;
 
 bool GW_RUNNING = false;
 
-TRAITS_GW::TRAITS_GW()
+TraitsGW::TraitsGW()
 {
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
@@ -31,7 +31,7 @@ TRAITS_GW::TRAITS_GW()
 #endif
 }
 
-TRAITS_GW::TRAITS_GW(string url)
+TraitsGW::TraitsGW(string url)
 {
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
@@ -45,13 +45,13 @@ TRAITS_GW::TRAITS_GW(string url)
 	server_url = url;
 }
 
-TRAITS_GW::~TRAITS_GW()
+TraitsGW::~TraitsGW()
 {
 
 }
 
 
-bool TRAITS_GW::init()
+bool TraitsGW::init()
 {
 	static string init_url = "init.do";
 
@@ -85,7 +85,7 @@ bool TRAITS_GW::init()
 	}
 }
 
-bool TRAITS_GW::heartbeat()
+bool TraitsGW::heartbeat()
 {
 	static string hb_url = "refresh.do";
 
@@ -111,6 +111,7 @@ bool TRAITS_GW::heartbeat()
         return false;
     } else {
         cout << "strResponse=" << strResponse << endl;
+		//todo:parse strResponse, and handle it
 		return true;
 	}
 
@@ -124,20 +125,22 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 } 
 
 
-bool TRAITS_GW::report(uint8_t *packet, int size)
+bool TraitsGW::report(uint8_t *packet, int size)
 {
-	static string data_url = "data.do";
+    static string url = server_url + "data.do";
 
 	static uint8_t packet_str[PACKET_SIZE * 3 + 1];
 	memset(packet_str, 0, PACKET_SIZE * 3 + 1);
-	
 	hex2str(packet_str, packet, size);
+
+	static time_t cur_t;
+	time(&cur_t);
 
 	json_object* data_object;
     data_object = json_object_new_object();
     json_object_object_add(data_object, "id", json_object_new_string(gage_id.c_str()));
     json_object_object_add(data_object, "data", json_object_new_string((const char *)packet_str));
-    json_object_object_add(data_object, "time", json_object_new_string("2015-09-17T11:07:47.926+08:00"));
+    json_object_object_add(data_object, "time", json_object_new_string(ctime(&cur_t)));
     json_object_object_add(data_object, "isAnalysis", json_object_new_string("1"));
 
 	
@@ -146,16 +149,17 @@ bool TRAITS_GW::report(uint8_t *packet, int size)
     cout << strPost << endl;
 #endif
 
-    string  strUrl = server_url + data_url;
-        string  strResponse;
-        bool i = 0;
-        HttpDownloadDomain hdd(&i);
-        hdd.Post(strUrl, strPost, strResponse);
+    string  strResponse;
+    bool i = 0;
+    HttpDownloadDomain hdd(&i);
+    hdd.Post(url, strPost, strResponse);
 
     json_object_put(data_object);
     
-if(strResponse.empty()){
-        cout << "response empty" << endl;
+	if(strResponse.empty()) {
+#ifdef TARAITS_DEBUG
+		cout << "response empty" << endl;
+#endif
         return false;
     } else {
         cout << "strResponse=" << strResponse << endl;
@@ -163,11 +167,12 @@ if(strResponse.empty()){
 	}
 }
 
+
 void* gw_run(void* arg)
 {
 	cout << "gw thread running" << endl;		
 
-	TRAITS_GW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
+	TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
 
 	Device* dev = new TestDevice();
 	if(NULL == dev) {
@@ -198,8 +203,11 @@ void* gw_run(void* arg)
 		}
 		pthread_mutex_unlock(&rb_mutex);
 		
-		//todo: packet to json, send to server
 		cout << "packet to json, send to server" << endl;
+		if(false == gw.report(packet_buf, packet_len))
+			//todo: retransmit this packet, or log it
+			;
+	    	
 	}
 
 	delete dev;

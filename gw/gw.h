@@ -12,12 +12,12 @@ extern bool GW_RUNNING;
 
 void* gw_run(void* arg);
 
-class TRAITS_GW
+class TraitsGW
 {
 public:
-	TRAITS_GW();
-	TRAITS_GW(string url);
-	~TRAITS_GW();	
+	TraitsGW();
+	TraitsGW(string url);
+	~TraitsGW();	
 
 	bool init();
 	bool heartbeat();
