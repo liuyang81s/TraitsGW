@@ -4,6 +4,9 @@
 #include <string>
 #include <list>
 
+using namespace std;
+
+
 //abstract response packet
 class TraitsPacket
 {
@@ -18,6 +21,7 @@ protected:
 	string errMsg;
 
 };
+
 
 //init response packet
 class TraitsInitPacket : public TraitsPacket
@@ -37,17 +41,20 @@ protected:
 	int isPlan;		//0:have no plan, 
 					//1:plan, no need to update
 					//2:plan, need to update
-	std::list<string> planklist;
+	list<string> planklist;
 	bool collectCycle;	
 
 };
+
 
 //data response packet
 class TraitsDataPacket : public TraitsPacket
 {
 public:
-	TraitsDataPacket()
+	TraitsDataPacket();
 	virtual ~TraitsDataPacket();
+
+	 bool handle();
 
 protected:
 
@@ -61,12 +68,14 @@ public:
 	TraitsHBPacket();
 	virtual ~TraitsHBPacket();
 
+	bool handle();
+
 protected:
 	string time;
 	int isPlan;		//0:have no plan, 
 					//1:plan, no need to update
 					//2:plan, need to update
-	std::list<string> planklist;
+	list<string> planklist;
 	bool collectCycle;	
 };
 
