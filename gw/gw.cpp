@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdint.h>
@@ -12,10 +13,13 @@
 #include "gw.h"
 
 #define PACKET_SIZE 256
+#define HB_PERIOD	30	//heartbeat period 30s
 
 using namespace std;
 
 bool GW_RUNNING = false;
+bool HB_RUNNING = false; 
+
 
 TraitsGW::TraitsGW()
 {
@@ -172,7 +176,8 @@ void* gw_run(void* arg)
 {
 	cout << "gw thread running" << endl;		
 
-	TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
+	//TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
+	TraitsGW* gw = (TraitsGW*)arg;
 
 	Device* dev = new TestDevice();
 	if(NULL == dev) {
@@ -204,7 +209,7 @@ void* gw_run(void* arg)
 		pthread_mutex_unlock(&rb_mutex);
 		
 		cout << "packet to json, send to server" << endl;
-		if(false == gw.report(packet_buf, packet_len))
+		if(false == gw->report(packet_buf, packet_len))
 			//todo: retransmit this packet, or log it
 			;
 	    	
@@ -215,6 +220,29 @@ void* gw_run(void* arg)
 out:
 	cout << "gw thread exit" << endl;
 	//todo: log
+	
+	return 0;
+}
+
+//心跳报文线程
+void* hb_run(void* arg)
+{
+	cout << "hb thread running" << endl;		
+
+	TraitsGW* gw = (TraitsGW*)arg;
+
+	HB_RUNNING = true;
+	while(HB_RUNNING) {
+#ifdef TRAITS_DEBUG
+		cout << "heartbeat" << endl;
+#endif
+		gw->heartbeat();
+
+		sleep(HB_PERIOD);
+	    //todo: handle the response	
+	}
+
+	cout << "hb thread exit" << endl;
 	
 	return 0;
 }

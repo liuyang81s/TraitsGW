@@ -9,8 +9,10 @@
 using namespace std;
 
 extern bool GW_RUNNING;
+extern bool HB_RUNNING;
 
 void* gw_run(void* arg);
+void* hb_run(void* arg);
 
 class TraitsGW
 {

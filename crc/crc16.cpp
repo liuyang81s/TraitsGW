@@ -60,4 +60,10 @@ uint16_t CRC16(uint8_t* puchMsg, int usDataLen)
 	return (uchCRCHi << 8 | uchCRCLo) ;
 }
 
+bool CRC16_check()
+{
+	return false;
+}
+
+
 

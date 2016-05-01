@@ -21,6 +21,7 @@ int main()
 {
 	pthread_t t_serial;
 	pthread_t t_gw;
+	pthread_t t_hb;
 
 #if 0
 	//TRAITS_GW gw;
@@ -33,7 +34,9 @@ int main()
 	cout << endl << endl;
 
 	gw.data();
-#else	
+#else
+	TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");
+	
     rbuffer = new UnlockRingBuffer(RINGBUFFER_SIZE);
     if(!rbuffer->init()) {
         cout << "ringbuffer init failed, serial thread exit" << endl;
@@ -44,7 +47,7 @@ int main()
 	pthread_mutex_init(&rb_mutex, NULL);
 	pthread_cond_init(&rb_cond, NULL);
 
-	int rc1 = pthread_create(&t_gw, NULL, gw_run, NULL);
+	int rc1 = pthread_create(&t_gw, NULL, gw_run, &gw);
 	if(rc1){
 		cout << "ERR: pthread_create failed with " << rc1 << endl;
 		return -rc1;
@@ -56,13 +59,21 @@ int main()
 		return -rc2;
 	}
 
+	int rc3 = pthread_create(&t_hb, NULL, hb_run, &gw);
+	if(rc3){
+		cout << "ERR: pthread_create failed with " << rc3 << endl;
+		return -rc3;
+	}
+	
 
 	sleep(100 * 3);
 	//sleep(10);
 
+	HB_RUNNING = false;
 	GW_RUNNING = false;
 	SERIAL_RUNNING = false;
 
+	pthread_join(t_hb, NULL);
 	pthread_join(t_gw, NULL);
 	pthread_join(t_serial, NULL);
 	
