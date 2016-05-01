@@ -3,7 +3,8 @@
 ROOT = $(realpath .)
 BUILDS = $(ROOT)/build
 
-DIRS = $(ROOT)/ringbuffer \
+DIRS = $(ROOT)/crc \
+	$(ROOT)/ringbuffer \
 	$(ROOT)/gw 
 
 RM = rm

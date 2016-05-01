@@ -41,7 +41,7 @@ protected:
 	int isPlan;		//0:have no plan, 
 					//1:plan, no need to update
 					//2:plan, need to update
-	list<string> planklist;
+	list<string> planlist;
 	bool collectCycle;	
 
 };
@@ -75,7 +75,7 @@ protected:
 	int isPlan;		//0:have no plan, 
 					//1:plan, no need to update
 					//2:plan, need to update
-	list<string> planklist;
+	list<string> planlist;
 	bool collectCycle;	
 };
 
