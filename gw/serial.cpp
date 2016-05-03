@@ -12,12 +12,17 @@
 #include "timerlist.h"
 
 
-#define DEVBUF_SIZE 128
+#ifdef POLL_MODE
+#include "timerlist.h"
+#endif
 
+
+#define DEVBUF_SIZE 128
 
 using namespace std;
 
-static const char DEVNAME[] = "/dev/ttyATH0";
+//static const char DEVNAME[] = "/dev/ttyATH0";
+static const char DEVNAME[] = "/dev/ttyS0";
 static uint8_t devbuf[DEVBUF_SIZE];
 
 bool SERIAL_RUNNING = false;
@@ -33,7 +38,8 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 #endif
 }
 
-#ifndef POLL
+#ifndef POLL_MODE
+
 void* serial_run(void* arg)
 {
 	cout << "serial thread running" << endl;	
@@ -93,8 +99,6 @@ void* serial_run(void* arg)
 {
 	cout << "serial thread running" << endl;	
 	
-	Selector selector;
-
 	int devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
         cout << "Open " << DEVNAME << "failed" << endl;
@@ -102,6 +106,7 @@ void* serial_run(void* arg)
         goto out;
     } 
 
+	Selector selector;
 	selector.set_fd(devfd, READ);
 	memset(devbuf, 0, DEVBUF_SIZE);
 
@@ -143,3 +148,4 @@ out:
 }
 
 #endif
+
