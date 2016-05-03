@@ -1,8 +1,9 @@
 LIB = 
 
 INCLUDE_DIRS = $(ROOT)/ringbuffer \
-				$(ROOT)/crc
-
+				$(ROOT)/crc \
+                $(ROOT)/timerlist \
+                $(ROOT)/devs
 
 BUILD_DIR = $(BUILDS)/gw
 LINK_LIBS = json-c curl pthread \
