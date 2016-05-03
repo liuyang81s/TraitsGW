@@ -1,6 +1,9 @@
 #ifndef TRAITS_SERIAL_H
 #define TRAITS_SERIAL_H
 
+#define POLL
+
+
 typedef enum{
     LISTEN,
     POLL,
