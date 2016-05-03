@@ -171,12 +171,11 @@ bool TraitsGW::report(uint8_t *packet, int size)
 	}
 }
 
-
+//网络数据转发线程
 void* gw_run(void* arg)
 {
 	cout << "gw thread running" << endl;		
 
-	//TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");	
 	TraitsGW* gw = (TraitsGW*)arg;
 
 	Device* dev = new TestDevice();

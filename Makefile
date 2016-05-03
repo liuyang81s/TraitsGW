@@ -4,7 +4,9 @@ ROOT = $(realpath .)
 BUILDS = $(ROOT)/build
 
 DIRS = $(ROOT)/crc \
+	$(ROOT)/timerlist \
 	$(ROOT)/ringbuffer \
+	$(ROOT)/devs \
 	$(ROOT)/gw 
 
 RM = rm
