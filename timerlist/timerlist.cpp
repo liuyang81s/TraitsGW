@@ -82,12 +82,13 @@ uint32_t Timer::get_period()
  */
 TimerList::TimerList()
 {
-	event_init();  
+	_base = event_base_new();
 }
 
 TimerList::~TimerList()
 {
-
+	evtimer_del(_evTime);
+	event_base_free(_base);
 }
 
 static void internal_onTimer(int sock, short event, void *arg)
@@ -99,12 +100,22 @@ static void internal_onTimer(int sock, short event, void *arg)
 	list<Timer*>* timers = tmlist->get_timers();
 
 	//取队列头第一个timer,执行,删除
+	Timer* tm = NULL;
 	if(!timers->empty())
 	{
-		Timer* tm = timers->front();
+		tm = timers->front();
 		tm->onTime(sock, event, arg);
 		timers->pop_front();
 	}	
+
+	//如果定时器是周期性的，再次加入链表
+	if((tm->get_period()) > 0)
+	{
+		timeval tv = tm->get_time();
+		tv.tv_sec = tm->get_period();
+		tm->set_time(tv);
+	 	timers->push_back(tm);	
+	}
 
 	//若队列不空个,用下一个timer更新定时器
 	if(!timers->empty())
@@ -117,7 +128,7 @@ static void internal_onTimer(int sock, short event, void *arg)
 
 void TimerList::init()
 {
-    evtimer_set(&_evTime, internal_onTimer, this);  
+	_evTime = evtimer_new(_base, internal_onTimer, this);
 }
 
 void TimerList::start()
@@ -128,8 +139,8 @@ void TimerList::start()
 		Timer* tm = _list.front();
 		timeval tv = tm->get_time();
 	
-		evtimer_add(&_evTime, &tv);  
-		event_dispatch();
+		evtimer_add(_evTime, &tv);  
+		event_base_dispatch(_base);
 	}
 }
 
@@ -145,7 +156,7 @@ void TimerList::delete_timer(Timer* tm)
 
 struct event* TimerList::get_event()
 {
-	return &_evTime;
+	return _evTime;
 }
 
 list<Timer*>* TimerList::get_timers()

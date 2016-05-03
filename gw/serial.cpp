@@ -9,8 +9,6 @@
 #include "serial.h"
 #include "main.h"
 #include "dev.h"
-#include "timerlist.h"
-
 
 #ifdef POLL_MODE
 #include "timerlist.h"

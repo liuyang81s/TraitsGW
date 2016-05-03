@@ -51,7 +51,8 @@ public:
 	list<Timer*>* get_timers();		
 
 protected:
-	struct event _evTime;
+	struct event_base* _base;
+	struct event* _evTime;
 	list<Timer*> _list;
 };
 
