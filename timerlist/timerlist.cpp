@@ -104,7 +104,7 @@ static void internal_onTimer(int sock, short event, void *arg)
 	if(!timers->empty())
 	{
 		tm = timers->front();
-		tm->onTime(sock, event, arg);
+		tm->onTime(arg);
 		timers->pop_front();
 	}	
 

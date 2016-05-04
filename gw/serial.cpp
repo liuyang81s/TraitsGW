@@ -35,7 +35,7 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 #endif
 }
 
-void serial_onTime(int sock, short event, void *arg)
+void serial_onTime(void *arg)
 {
     static struct timeval read_timeout = {5, 0};
 
@@ -98,14 +98,7 @@ void* serial_run(void* arg)
 {
 	cout << "serial thread running" << endl;	
 	
-    struct timeval tv;
-    tv.tv_sec = 2;
-    tv.tv_usec = 0;
-    
-    Timer tm(tv, 5);
-    tm.onTime = serial_onTime;
-	
-    TimerList* tmlist = new TimerList();
+    TimerList* tmlist = (TimerList*)arg;
 
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
@@ -118,13 +111,9 @@ void* serial_run(void* arg)
     //todo: check selector != NULL
 	selector->set_fd(devfd, READ);
 
-    tmlist->init();
-    tmlist->add_timer(&tm);
-
     tmlist->start(); 
 	
 out:
-    delete tmlist;
     close(devfd);
 
 	cout << "serial thread exit" << endl;

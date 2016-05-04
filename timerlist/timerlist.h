@@ -8,7 +8,7 @@
 
 using namespace std;
 
-typedef void (*TIMERFUNC)(int sock, short event, void *arg);
+typedef void (*TIMERFUNC)(void *arg);
 
 class Timer
 {
