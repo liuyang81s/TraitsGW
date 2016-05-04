@@ -23,18 +23,6 @@ int main()
 	pthread_t t_gw;
 	pthread_t t_hb;
 
-#if 0
-	//TRAITS_GW gw;
-	TRAITS_GW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");
-
-	gw.init();
-	cout << endl << endl;
-
-	gw.hb();
-	cout << endl << endl;
-
-	gw.data();
-#else
 	TraitsGW gw("http://traits.imwork.net:10498/AnalyzeServer/system/");
 	
     rbuffer = new UnlockRingBuffer(RINGBUFFER_SIZE);
@@ -67,7 +55,6 @@ int main()
 	
 
 	sleep(100 * 3);
-	//sleep(10);
 
 	HB_RUNNING = false;
 	GW_RUNNING = false;
@@ -81,7 +68,6 @@ int main()
 	pthread_cond_destroy(&rb_cond);
 
 	cout << "main thread exit" << endl;
-#endif
 
 	return 0;
 }

@@ -68,7 +68,7 @@ bool TraitsGW::init()
     json_object_object_add(init_object, "id", json_object_new_string(gage_id.c_str()));
 
     string strPost(json_object_to_json_string(init_object));
-#ifdef TRAITS_DEBUG
+#ifdef TRAITS_DEBUG_GW
     cout << strPost << endl;
 #endif
 
@@ -98,7 +98,7 @@ bool TraitsGW::heartbeat()
     json_object_object_add(hb_object, "id", json_object_new_string(gage_id.c_str()));
 
     string strPost(json_object_to_json_string(hb_object));
-#ifdef TRAITS_DEBUG    
+#ifdef TRAITS_DEBUG_HB
 	cout << strPost << endl;
 #endif
 
@@ -111,10 +111,14 @@ bool TraitsGW::heartbeat()
     json_object_put(hb_object);
 
     if(strResponse.empty()){
+#ifdef TRAITS_DEBUG_HB
         cout << "response empty" << endl;
+#endif
         return false;
     } else {
+#ifdef TRAITS_DEBUG_HB
         cout << "strResponse=" << strResponse << endl;
+#endif
 		//todo:parse strResponse, and handle it
 		return true;
 	}
@@ -133,6 +137,10 @@ bool TraitsGW::report(uint8_t *packet, int size)
 {
     static string url = server_url + "data.do";
 
+#if 1    
+    cout << "report" << endl;
+#endif
+
 	static uint8_t packet_str[PACKET_SIZE * 3 + 1];
 	memset(packet_str, 0, PACKET_SIZE * 3 + 1);
 	hex2str(packet_str, packet, size);
@@ -149,7 +157,7 @@ bool TraitsGW::report(uint8_t *packet, int size)
 
 	
     string strPost(json_object_to_json_string(data_object));
-#ifdef TRAITS_DEBUG
+#ifdef TRAITS_DEBUG_GW
     cout << strPost << endl;
 #endif
 
@@ -161,8 +169,8 @@ bool TraitsGW::report(uint8_t *packet, int size)
     json_object_put(data_object);
     
 	if(strResponse.empty()) {
-#ifdef TARAITS_DEBUG
-		cout << "response empty" << endl;
+#ifdef TARAITS_DEBUG_GW 
+        cout << "response empty" << endl;
 #endif
         return false;
     } else {
@@ -232,7 +240,7 @@ void* hb_run(void* arg)
 
 	HB_RUNNING = true;
 	while(HB_RUNNING) {
-#ifdef TRAITS_DEBUG
+#ifdef TRAITS_DEBUG_HB
 		cout << "heartbeat" << endl;
 #endif
 		gw->heartbeat();

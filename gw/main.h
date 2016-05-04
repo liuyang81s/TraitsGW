@@ -1,9 +1,13 @@
 #ifndef TRAITS_MAIN_H
 #define TRAITS_MAIN_H
 
-#define TRAITS_DEBUG
 #define TRAITS_INFO
 #define TRAITS_LOG
+#define TRAITS_DEBUG
+#define TRAITS_DEBUG_GW
+//#define TRAITS_DEBUG_HB
+#define TRAITS_DEBUG_SERIAL
+
 
 #include "unlock_ringbuffer.h"
 
