@@ -103,6 +103,9 @@ void serial_onTime(int sock, short event, void *arg)
     if(devfd == 0)
         return;
 
+    cout << "onTime" << endl;
+
+
     uint8_t cmd[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
     
     int count = sizeof(cmd);
@@ -110,19 +113,31 @@ void serial_onTime(int sock, short event, void *arg)
     if(writebytes < count)
     {
         //todo: failed, log
+        cout << "writebytes = " << writebytes << endl;
         cout << "write failed" << endl;
         return ;
     }
 
+
 	while(true) {
-		if(selector->select(&read_timeout) == -1) {
+		int r = selector->select(&read_timeout);
+		//if(selector->select(&read_timeout) == -1) 
+		//if(selector->select(NULL) == -1) 
+        if(-1 == r)
+        {
 			cout << "select error" << endl;
 		    //todo:log
             return;
-		} 
+		} else if (0 == r) {
+            cout << "read timeout" << endl;
+            return;
+        }
 	
+        cout << "select return" << endl;
+
 		int devbytes = 0;
 		if(selector->fd_isset(devfd, READ)) {   
+            cout << "data comming" << endl;
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 			if(devbytes <= 0) {
 				cout << DEVNAME << " closed" << endl;
@@ -132,8 +147,9 @@ void serial_onTime(int sock, short event, void *arg)
 				break;
 				//todo: reopen dev
 			} else {
-				rbuffer->put(devbuf, devbytes);
+				//rbuffer->put(devbuf, devbytes);
 				dev_log(DEVNAME, devbuf, devbytes);				
+                break;
 			}
         } 
 	}
@@ -147,10 +163,10 @@ void* serial_run(void* arg)
 	cout << "serial thread running" << endl;	
 	
     struct timeval tv;
-    tv.tv_sec = 5;
+    tv.tv_sec = 2;
     tv.tv_usec = 0;
     
-    Timer tm(tv, 2);
+    Timer tm(tv, 5);
     tm.onTime = serial_onTime;
 	
     TimerList* tmlist = new TimerList();
