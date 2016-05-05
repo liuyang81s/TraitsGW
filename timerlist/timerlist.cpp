@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <string.h>
 #include <stdint.h>
 #include <event.h>
 
@@ -13,35 +14,9 @@ using namespace std;
  */
 Timer::Timer()
 {
-
-}
-
-Timer::Timer(timeval tv)
-{
-	_tv = tv;
-	_period = 0;
-}
-
-Timer::Timer(string tv)
-{
-	//todo: parse the time sting to timeval
-	_tv.tv_sec = 1;
+	_tv.tv_sec = 0;
 	_tv.tv_usec = 0;
 	_period = 0;
-}
-
-Timer::Timer(timeval tv, uint32_t period)
-{
-	_tv = tv;
-	_period = period;
-}
-
-Timer::Timer(string tv, uint32_t period)
-{
-	//todo: parse the time sting to timeval
-	_tv.tv_sec = 1;
-	_tv.tv_usec = 0;
-	_period = period;
 }
 
 Timer::~Timer()
@@ -49,19 +24,49 @@ Timer::~Timer()
 
 }
 
-void Timer::set_time(timeval tv)
+bool Timer::set_time(timeval tv)
 {
+	if(tv.tv_sec < 0 || tv.tv_usec < 0)
+		return false;
+
 	_tv = tv;
+
+	return true;
 }
 
-void Timer::set_time(string tv)
+//时间格式：11:07:47
+bool Timer::set_time(string tv)
 {
-	//todo: parse the time sting to timeval
-	 _tv.tv_sec = 1;
+    time_t cur_t;
+    struct tm* cur_tm;
+    struct tm dst_tm;
+
+    time(&cur_t);
+    cur_tm=localtime(&cur_t);
+
+    memset(&dst_tm, 0, sizeof(dst_tm));
+	if(NULL == strptime(tv.c_str(), "%H:%M:%S", &dst_tm))
+		return false;
+    
+	dst_tm.tm_mday = cur_tm->tm_mday;
+   	dst_tm.tm_mon = cur_tm->tm_mon;
+    dst_tm.tm_year = cur_tm->tm_year;
+    dst_tm.tm_wday = cur_tm->tm_wday;
+    dst_tm.tm_yday = cur_tm->tm_yday;
+    dst_tm.tm_isdst = cur_tm->tm_isdst;
+
+	int interval = mktime(&dst_tm) - cur_t;
+	if(interval <= 0)
+		return false; 
+
+	_tv.tv_sec = interval;
 	_tv.tv_usec = 0;
+	_period = 0;
+
+	return true;
 }
 
-timeval Timer::get_time()
+timeval Timer::get_time() const
 {
 	return _tv;
 }
@@ -71,7 +76,7 @@ void Timer::set_period(uint32_t period)
 	_period = period;
 }
 
-uint32_t Timer::get_period()
+uint32_t Timer::get_period() const
 {
 	return _period;
 }
@@ -106,10 +111,13 @@ static void internal_onTimer(int sock, short event, void *arg)
 		tm = timers->front();
 		tm->onTime(arg);
 		timers->pop_front();
+
+		tmlist->update_timer(tm->get_time());
 	}	
 
+
 	//如果定时器是周期性的，再次加入链表
-	if((tm->get_period()) > 0)
+	if(tm != NULL & (tm->get_period() > 0))
 	{
 		timeval tv = tm->get_time();
 		tv.tv_sec = tm->get_period();
@@ -144,9 +152,25 @@ void TimerList::start()
 	}
 }
 
+static bool compare_timer (const Timer* first, const Timer* second)
+{
+    timeval t1 = first->get_time();
+    timeval t2 = second->get_time();
+    if(t1.tv_sec < t2.tv_sec)
+        return true;
+    else if(t1.tv_sec == t2.tv_sec) {
+        if(t1.tv_usec <= t2.tv_usec)
+            return true;
+        else
+            return false;   
+    } else
+        return false;   
+}
+
 void TimerList::add_timer(Timer* tm)
 {
 	_list.push_back(tm);
+	_list.sort(compare_timer);
 }
 
 void TimerList::delete_timer(Timer* tm)
@@ -162,6 +186,21 @@ struct event* TimerList::get_event()
 list<Timer*>* TimerList::get_timers()
 {
 	return &_list;
+}
+
+
+void TimerList::update_timer(timeval tv)
+{
+    list<Timer*>::iterator it; 
+
+    for (it = _list.begin(); it != _list.end(); ++it) {
+        timeval temp_tv = (*it)->get_time();
+		temp_tv.tv_sec -= tv.tv_sec;
+		if(temp_tv.tv_sec < 0)
+			temp_tv.tv_sec = 0;
+		//ignore usec
+		(*it)->set_time(temp_tv);
+    }  	
 }
 
 

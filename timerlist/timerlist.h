@@ -14,25 +14,19 @@ class Timer
 {
 public:
 	Timer();
-	Timer(timeval tv);
-	Timer(timeval tv, uint32_t period);
-	Timer(string tv);
-	Timer(string tv, uint32_t period);
-
 	virtual ~Timer();
 
-	void set_time(timeval tv);
-	void set_time(string tv);
-	timeval get_time();
+	bool set_time(timeval tv);
+	bool set_time(string tv);
+	timeval get_time() const;
 	
-	uint32_t get_period();
+	uint32_t get_period() const;
 	void set_period(uint32_t period);
 
 	TIMERFUNC onTime;
 protected:
 	timeval _tv;
 	uint32_t _period;
-	
 };
 
 class TimerList
@@ -46,6 +40,7 @@ public:
 
 	void add_timer(Timer* tm);
 	void delete_timer(Timer* tm);
+	void update_timer(timeval tv);
 
 	struct event* get_event();
 	list<Timer*>* get_timers();		

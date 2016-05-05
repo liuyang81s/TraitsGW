@@ -31,7 +31,9 @@ int main()
     tv.tv_sec = 1;
     tv.tv_usec = 0;
 
-    Timer tm(tv, 5);
+    Timer tm;
+	tm.set_time(tv);
+	tm.set_period(5);
     tm.onTime = serial_onTime; 
     
     TimerList tmlist;
