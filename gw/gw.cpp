@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <unistd.h>
@@ -12,41 +13,45 @@
 #include "dev.h"
 #include "gw.h"
 
+#define	CONFIG_PATH "/etc/config/device" 
 #define PACKET_SIZE 256
 #define HB_PERIOD	30	//heartbeat period 30s
 
 using namespace std;
 
 bool GW_RUNNING = false;
-bool HB_RUNNING = false; 
+bool HB_RUNNING = false;
 
 
 TraitsGW::TraitsGW()
 {
-#ifdef TRAITS_DEBUG
-	gage_name = "wenduji";	
-	factory = "sanfeng";
-	gage_type = "1";
-	gage_no = "abcde";
-	gage_id = "123456";
-	
+	init();
 	server_url = "http://traits.imwork.net:10498/AnalyzeServer/system/";
-	mode = LISTEN;
-#endif
 }
 
 TraitsGW::TraitsGW(string url)
 {
+	init();
+	server_url = url;
+}
+
+void TraitsGW::init()
+{
+	gage_name.clear();
+	gage_type.clear();
+	gage_no.clear();
+	self_id.clear();
+	vendor.clear();
+
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
-	factory = "sanfeng";
+	vendor = "sanfeng";
 	gage_type = "1";
 	gage_no = "abcde";
-	gage_id = "123456";
+	self_id = "123456";
 	
 	mode = LISTEN;
 #endif
-	server_url = url;
 }
 
 TraitsGW::~TraitsGW()
@@ -54,18 +59,104 @@ TraitsGW::~TraitsGW()
 
 }
 
+static string get_attr_from_line(string line)
+{
+	int i = line.find_first_of('\'');	
+	int j = line.find_last_of('\'');
 
-bool TraitsGW::init()
+	return line.substr(i + 1, j - i - 1);	
+}
+
+
+string TraitsGW::get_self_id()
+{
+#define ETH0_MAC_ADDR "/sys/class/net/eth0/address"
+
+	ifstream mac_in(ETH0_MAC_ADDR);
+	if(!mac_in) {
+		cout << ETH0_MAC_ADDR << " not found" << endl;
+		//todo: log
+		return "";
+	}	
+
+	string mac;	
+	getline(mac_in, mac); 
+
+	string id;
+	id.push_back(mac[0]);
+	id.push_back(mac[1]);
+
+	id.push_back(mac[3]);
+	id.push_back(mac[4]);
+
+	id.push_back(mac[6]);
+	id.push_back(mac[7]);
+
+	id.push_back(mac[9]);
+	id.push_back(mac[10]);
+
+	id.push_back(mac[12]);
+	id.push_back(mac[13]);
+
+	id.push_back(mac[15]);
+	id.push_back(mac[16]);
+
+	return id;
+}
+
+bool TraitsGW::request_init()
 {
 	static string init_url = "init.do";
 
+	//read config file, get gage info 
+	ifstream config_file(CONFIG_PATH);
+	if(!config_file) {
+		cout << CONFIG_PATH << " not found" << endl;
+		//todo: log
+		return false;	
+	}
+
+	string line;
+    while(!config_file.eof()){
+		getline(config_file, line);
+		
+		if(string::npos != line.find("vendor"))
+			vendor = get_attr_from_line(line);
+		else if(string::npos != line.find("name"))
+			gage_name = get_attr_from_line(line);
+		else if(string::npos != line.find("type"))
+			gage_type = get_attr_from_line(line);
+		else if(string::npos != line.find("num"))
+			gage_no = get_attr_from_line(line);
+		else
+			continue;
+	}  					
+#ifdef TRAITS_DEBUG_GW
+		cout << "vendor = " << vendor << endl;
+		cout << "gage_name = " << gage_name << endl;
+		cout << "gage_type = " << gage_type << endl;
+		cout << "gage_no = " << gage_no << endl;
+#endif		
+
+	if(vendor.empty() || gage_name.empty()
+		||gage_type.empty() || gage_no.empty())
+		return false;
+
+	self_id = get_self_id();
+#ifdef TRAITS_DEBUG_GW
+		cout << "self_id = " << self_id << endl;  
+#endif
+	if(self_id == "")
+		return false;
+
+	//send 'init' request to server
 	json_object* init_object;
     init_object = json_object_new_object();
     json_object_object_add(init_object, "gageName", json_object_new_string(gage_name.c_str()));
-    json_object_object_add(init_object, "factory", json_object_new_string(factory.c_str()));
+    json_object_object_add(init_object, "factory", json_object_new_string(vendor.c_str()));
     json_object_object_add(init_object, "gageType", json_object_new_string(gage_type.c_str()));
     json_object_object_add(init_object, "gageNo", json_object_new_string(gage_no.c_str()));
-    json_object_object_add(init_object, "id", json_object_new_string(gage_id.c_str()));
+    json_object_object_add(init_object, "id", json_object_new_string(self_id.c_str()));
 
     string strPost(json_object_to_json_string(init_object));
 #ifdef TRAITS_DEBUG_GW
@@ -95,7 +186,7 @@ bool TraitsGW::heartbeat()
 
 	json_object* hb_object;
     hb_object = json_object_new_object();
-    json_object_object_add(hb_object, "id", json_object_new_string(gage_id.c_str()));
+    json_object_object_add(hb_object, "id", json_object_new_string(self_id.c_str()));
 
     string strPost(json_object_to_json_string(hb_object));
 #ifdef TRAITS_DEBUG_HB
@@ -150,7 +241,7 @@ bool TraitsGW::report(uint8_t *packet, int size)
 
 	json_object* data_object;
     data_object = json_object_new_object();
-    json_object_object_add(data_object, "id", json_object_new_string(gage_id.c_str()));
+    json_object_object_add(data_object, "id", json_object_new_string(self_id.c_str()));
     json_object_object_add(data_object, "data", json_object_new_string((const char *)packet_str));
     json_object_object_add(data_object, "time", json_object_new_string(ctime(&cur_t)));
     json_object_object_add(data_object, "isAnalysis", json_object_new_string("1"));
@@ -185,6 +276,8 @@ void* gw_run(void* arg)
 	cout << "gw thread running" << endl;		
 
 	TraitsGW* gw = (TraitsGW*)arg;
+	gw->request_init();
+
 
 	Device* dev = new TestDevice();
 	if(NULL == dev) {

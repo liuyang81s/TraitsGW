@@ -21,18 +21,22 @@ public:
 	TraitsGW(string url);
 	~TraitsGW();	
 
-	bool init();
+	bool request_init();
 	bool heartbeat();
 	bool report(uint8_t *packet, int size);
 
 protected:
+	void init();
+	string get_self_id();
+
 
 	/* device related */
 	string gage_name;
-	string factory;
+	string vendor;
 	string gage_type;
 	string gage_no;
-	string gage_id;
+
+	string self_id;
 
 	string server_url;
 	WORK_MODE mode;
