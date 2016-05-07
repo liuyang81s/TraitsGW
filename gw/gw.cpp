@@ -44,8 +44,9 @@ void TraitsGW::init()
 	self_id.clear();
     
     uart_mode = UART_INVALID;
-    send_type = 0;
-    modbus_type = 0;
+    send_type = SEND_INVALID;
+    proto = PROTO_INVALID;
+    plan_mode = PLAN_INVALID;
     collect_cycle = 0;
     
 #ifdef TRAITS_DEBUG
@@ -352,10 +353,11 @@ bool TraitsGW::init_response_handler(const string& response)
         plan_mode = PLAN_INVALID;
 
     //parse 'planList'
-    json_object_object_get_ex(full_obj, "planList", &temp_obj) 
+    json_object_object_get_ex(full_obj, "planList", &temp_obj);
+    struct json_object* timer_obj;
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
-        cout << "timer = " << json_object_to_json_string(timer_obj);
+        cout << "timer = " << json_object_to_json_string(timer_obj) << endl;
         //todo:add timer list
     }
     json_object_put(timer_obj);
@@ -443,7 +445,8 @@ bool TraitsGW::hb_response_handler(const string& response)
         plan_mode = PLAN_INVALID;
 
     //parse 'planList'
-    json_object_object_get_ex(full_obj, "planList", &temp_obj) 
+    json_object_object_get_ex(full_obj, "planList", &temp_obj);
+    struct json_object* timer_obj;
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
         cout << "timer = " << json_object_to_json_string(timer_obj);
