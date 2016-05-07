@@ -277,6 +277,8 @@ void* gw_run(void* arg)
 
 	TraitsGW* gw = (TraitsGW*)arg;
 	gw->request_init();
+	//todo: if request_init return false, then ... 
+
 
 
 	Device* dev = new TestDevice();
