@@ -40,9 +40,14 @@ void TraitsGW::init()
 	gage_name.clear();
 	gage_type.clear();
 	gage_no.clear();
-	self_id.clear();
 	vendor.clear();
-
+	self_id.clear();
+    
+    uart_mode = UART_INVALID;
+    send_type = 0;
+    modbus_type = 0;
+    collect_cycle = 0;
+    
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
 	vendor = "sanfeng";
@@ -50,7 +55,7 @@ void TraitsGW::init()
 	gage_no = "abcde";
 	self_id = "123456";
 	
-	mode = LISTEN;
+	uart_mode = UART_POLL;
 #endif
 }
 
@@ -244,7 +249,8 @@ bool TraitsGW::report(uint8_t *packet, int size)
     json_object_object_add(data_object, "id", json_object_new_string(self_id.c_str()));
     json_object_object_add(data_object, "data", json_object_new_string((const char *)packet_str));
     json_object_object_add(data_object, "time", json_object_new_string(ctime(&cur_t)));
-    json_object_object_add(data_object, "isAnalysis", json_object_new_string("1"));
+    //todo:0 or 1
+    json_object_object_add(data_object, "isAnalysis", json_object_new_int(1));
 
 	
     string strPost(json_object_to_json_string(data_object));
@@ -268,6 +274,192 @@ bool TraitsGW::report(uint8_t *packet, int size)
         cout << "strResponse=" << strResponse << endl;
 		return true;
 	}
+}
+
+bool TraitsGW::init_response_handler(const string& response)
+{
+    if(response.empty())
+       return false; 
+  
+    json_object *temp_obj; 
+    json_object *full_obj = json_tokener_parse(response.c_str()); 
+    if(is_error(full_obj)){
+        cout << "init response string is invalid" << endl;
+        //todo: log
+        return false;
+    }
+
+    //parse 'code'
+    json_object_object_get_ex(full_obj, "code", &temp_obj);
+    int ret_code = json_object_get_int(temp_obj);
+    
+    //parse 'errorMessage'
+    json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
+    string errmsg(json_object_get_string(temp_obj));
+   
+    //parse 'time'
+    json_object_object_get_ex(full_obj, "time", &temp_obj);
+    string server_time(json_object_get_string(temp_obj));
+    
+    //parse 'modbusType'
+    json_object_object_get_ex(full_obj, "modbusType", &temp_obj);
+    int p = json_object_get_int(temp_obj);
+    if(0 == p)
+        proto = PROTO_NONE;
+    else if(1 == p)
+        proto = PROTO_MODBUS;
+    else if(2 == p)
+        proto = PROTO_OTHER;
+    else
+        proto = PROTO_INVALID;
+      
+    //parse 'isListen'
+    json_object_object_get_ex(full_obj, "isListen", &temp_obj);
+    int is_listen = json_object_get_int(temp_obj);
+    if(0 == is_listen)
+        uart_mode = UART_POLL;
+    else if(1 == is_listen)
+        uart_mode = UART_LISTEN;
+    else
+        uart_mode = UART_INVALID;
+
+    //parse 'sendType'
+    json_object_object_get_ex(full_obj, "sendType", &temp_obj);
+    int stype = json_object_get_int(temp_obj);
+    if(0 == stype)
+        send_type = SEND_NOTHING;
+    else if(1 == stype)
+        send_type = SEND_ASCII;
+    else if(2 == stype)
+        send_type = SEND_HEX;
+    else
+        send_type = SEND_INVALID;
+
+    //parse 'sendContent'
+    json_object_object_get_ex(full_obj, "sendContent", &temp_obj);
+    string send_content(json_object_get_string(temp_obj));
+      
+    //parse 'isPlan'
+    json_object_object_get_ex(full_obj, "isPlan", &temp_obj);
+    int isplan = json_object_get_int(temp_obj);
+    if(0 == isplan)
+        plan_mode = PLAN_NONE;
+    else if(1 == isplan)
+        plan_mode = PLAN_REMAIN;
+    else if(2 == isplan)
+        plan_mode = PLAN_UPDATE;
+    else 
+        plan_mode = PLAN_INVALID;
+
+    //parse 'planList'
+    json_object_object_get_ex(full_obj, "planList", &temp_obj) 
+    for(int i = 0; i < json_object_array_length(temp_obj); i++){
+        struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
+        cout << "timer = " << json_object_to_json_string(timer_obj);
+        //todo:add timer list
+    }
+    json_object_put(timer_obj);
+
+    //parse 'collectCycle'
+    json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
+    collect_cycle = json_object_get_int(temp_obj) & 0xff;
+    
+    
+    json_object_put(full_obj);
+    json_object_put(temp_obj);
+
+    
+    //todo:time adjustment
+
+        
+
+    return true;
+}
+
+
+bool TraitsGW::data_response_handler(const string& response)
+{
+    if(response.empty())
+       return false; 
+  
+    json_object *temp_obj; 
+    json_object *full_obj = json_tokener_parse(response.c_str()); 
+    if(is_error(full_obj)){
+        cout << "init response string is invalid" << endl;
+        //todo: log
+        return false;
+    }
+
+    //parse 'code'
+    json_object_object_get_ex(full_obj, "code", &temp_obj);
+    int ret_code = json_object_get_int(temp_obj);
+    
+    //parse 'errorMessage'
+    json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
+    string errmsg(json_object_get_string(temp_obj));
+   
+    json_object_put(full_obj);
+    json_object_put(temp_obj);
+    
+    return true;
+}
+
+
+bool TraitsGW::hb_response_handler(const string& response)
+{
+    if(response.empty())
+       return false; 
+  
+    json_object *temp_obj; 
+    json_object *full_obj = json_tokener_parse(response.c_str()); 
+    if(is_error(full_obj)){
+        cout << "init response string is invalid" << endl;
+        //todo: log
+        return false;
+    }
+
+    //parse 'code'
+    json_object_object_get_ex(full_obj, "code", &temp_obj);
+    int ret_code = json_object_get_int(temp_obj);
+    
+    //parse 'errorMessage'
+    json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
+    string errmsg(json_object_get_string(temp_obj));
+   
+    //parse 'time'
+    json_object_object_get_ex(full_obj, "time", &temp_obj);
+    string server_time(json_object_get_string(temp_obj));
+    
+    //parse 'isPlan'
+    json_object_object_get_ex(full_obj, "isPlan", &temp_obj);
+    int isplan = json_object_get_int(temp_obj);
+    if(0 == isplan)
+        plan_mode = PLAN_NONE;
+    else if(1 == isplan)
+        plan_mode = PLAN_REMAIN;
+    else if(2 == isplan)
+        plan_mode = PLAN_UPDATE;
+    else 
+        plan_mode = PLAN_INVALID;
+
+    //parse 'planList'
+    json_object_object_get_ex(full_obj, "planList", &temp_obj) 
+    for(int i = 0; i < json_object_array_length(temp_obj); i++){
+        struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
+        cout << "timer = " << json_object_to_json_string(timer_obj);
+        //todo:add timer list
+    }
+    json_object_put(timer_obj);
+
+    //parse 'collectCycle'
+    json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
+    collect_cycle = json_object_get_int(temp_obj) & 0xff;
+    
+    json_object_put(full_obj);
+    json_object_put(temp_obj);
+
+    
+    return true;
 }
 
 //网络数据转发线程

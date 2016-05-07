@@ -4,10 +4,10 @@
 #define POLL_MODE
 
 typedef enum{
-    LISTEN,
-    POLL,
-    INVALID,
-}WORK_MODE;
+    UART_POLL = 0,
+    UART_LISTEN,
+    UART_INVALID,
+}UART_MODE;
 
 void serial_onTime(void* arg);
 void* serial_run(void* arg);
