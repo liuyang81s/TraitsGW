@@ -94,7 +94,7 @@ void serial_onTime(void *arg)
 
 } 
 
-void* serial_run(void* arg)
+void* serial_poll_run(void* arg)
 {
 	cout << "serial thread running" << endl;	
 	
@@ -122,3 +122,8 @@ out:
 	return 0;
 }
 
+
+void* serial_listen_run(void* arg)
+{
+	return 0;
+}

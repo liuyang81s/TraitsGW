@@ -6,6 +6,7 @@
 #include "http.h"
 #include "gw.h"
 #include "serial.h"
+#include "timer.h"
 #include "timerlist.h"
 #include "main.h"
 
@@ -64,7 +65,7 @@ int main()
 		return -rc2;
 	}
 	
-	int rc3 = pthread_create(&t_serial, NULL, serial_run, &tmlist);
+	int rc3 = pthread_create(&t_serial, NULL, serial_poll_run, &tmlist);
 	if(rc3){
 		cout << "ERR: pthread_create failed with " << rc3 << endl;
 		return -rc3;
@@ -81,6 +82,9 @@ int main()
 	
 	pthread_mutex_destroy(&rb_mutex);
 	pthread_cond_destroy(&rb_cond);
+
+	if(rbuffer != NULL)
+		delete rbuffer;
 
 	cout << "main thread exit" << endl;
 

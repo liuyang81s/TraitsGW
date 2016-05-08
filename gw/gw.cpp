@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <json-c/json.h>
+#include <json-c/bits.h>
 
 #include "main.h"
 #include "http.h"
@@ -48,6 +49,7 @@ void TraitsGW::init()
     proto = PROTO_INVALID;
     plan_mode = PLAN_INVALID;
     collect_cycle = 0;
+	tmlist = NULL;
     
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
@@ -290,6 +292,8 @@ bool TraitsGW::init_response_handler(const string& response)
         return false;
     }
 
+	bool ret = false;
+
     //parse 'code'
     json_object_object_get_ex(full_obj, "code", &temp_obj);
     int ret_code = json_object_get_int(temp_obj);
@@ -352,30 +356,56 @@ bool TraitsGW::init_response_handler(const string& response)
     else 
         plan_mode = PLAN_INVALID;
 
-    //parse 'planList'
-    json_object_object_get_ex(full_obj, "planList", &temp_obj);
-    struct json_object* timer_obj;
-    for(int i = 0; i < json_object_array_length(temp_obj); i++){
-        struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
-        cout << "timer = " << json_object_to_json_string(timer_obj) << endl;
-        //todo:add timer list
-    }
-    json_object_put(timer_obj);
-
     //parse 'collectCycle'
     json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
     collect_cycle = json_object_get_int(temp_obj) & 0xff;
     
+	//parse 'planList'
+	tmlist = new TimerList();
+	if(tmlist == NULL) {
+		cout << "TimerList alloction failed" << endl;
+		//todo: log
+		ret = false;
+		goto out;
+	}	
+	tmlist->init();
     
-    json_object_put(full_obj);
-    json_object_put(temp_obj);
+	json_object_object_get_ex(full_obj, "planList", &temp_obj);
+    json_object* timer_obj;
+    for(int i = 0; i < json_object_array_length(temp_obj); i++){
+        timer_obj = json_object_array_get_idx(temp_obj, i);
+		string tv = json_object_to_json_string(timer_obj);
+        cout << "timer = " << tv << endl;
+		//make new timer, add to timerlist
+		Timer* tm = new WeeklyTimer(collect_cycle);
+		if(NULL == tm){
+			cout << "Timer alloction failed" << endl;
+			//todo:log
+			ret = false;
+			goto timer_mem_failed; 
+		}
+		if(false == tm->set_time(tv)) {
+			//todo:log it
+			//or led indication
+			continue;
+		}
+		tm->onTime = serial_onTime;
+		tmlist->add_timer(tm);
+    }
 
-    
+ 
     //todo:time adjustment
 
-        
+	ret = true;
 
-    return true;
+timer_mem_failed:
+	delete tmlist; 
+out:    
+    json_object_put(timer_obj);
+    json_object_put(temp_obj);
+    json_object_put(full_obj);
+
+    return ret;
 }
 
 
@@ -446,9 +476,9 @@ bool TraitsGW::hb_response_handler(const string& response)
 
     //parse 'planList'
     json_object_object_get_ex(full_obj, "planList", &temp_obj);
-    struct json_object* timer_obj;
+    json_object* timer_obj;
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
-        struct json_object* timer_obj = json_object_array_get_idx(temp_obj, i);
+        timer_obj = json_object_array_get_idx(temp_obj, i);
         cout << "timer = " << json_object_to_json_string(timer_obj);
         //todo:add timer list
     }

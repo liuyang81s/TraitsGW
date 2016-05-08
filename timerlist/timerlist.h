@@ -6,28 +6,9 @@
 #include <stdint.h>
 #include <event.h>
 
+#include "timer.h"
+
 using namespace std;
-
-typedef void (*TIMERFUNC)(void *arg);
-
-class Timer
-{
-public:
-	Timer();
-	virtual ~Timer();
-
-	bool set_time(timeval tv);
-	bool set_time(string tv);
-	timeval get_time() const;
-	
-	uint32_t get_period() const;
-	void set_period(uint32_t period);
-
-	TIMERFUNC onTime;
-protected:
-	timeval _tv;
-	uint32_t _period;
-};
 
 class TimerList
 {

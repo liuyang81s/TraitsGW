@@ -10,7 +10,8 @@ typedef enum{
 }UART_MODE;
 
 void serial_onTime(void* arg);
-void* serial_run(void* arg);
+void* serial_listen_run(void* arg);
+void* serial_poll_run(void* arg);
 
 extern bool SERIAL_RUNNING;
 

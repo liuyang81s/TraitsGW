@@ -3,8 +3,8 @@
 
 #include <string>
 #include <stdint.h>
-
 #include "serial.h"
+#include "timerlist.h"
 
 using namespace std;
 
@@ -66,10 +66,11 @@ protected:
 	UART_MODE uart_mode;
 	SEND_TYPE send_type;
     PROTO_TYPE proto;
+
     PLAN_MODE plan_mode;
+	TimerList* tmlist;		
     uint8_t collect_cycle;    
 };
-
 
 #endif
 

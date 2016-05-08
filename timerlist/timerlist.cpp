@@ -4,83 +4,10 @@
 #include <stdint.h>
 #include <event.h>
 
+#include "timer.h"
 #include "timerlist.h"
 
 using namespace std;
-
-
-/*------------------------------------------------------
- * Timer definitions
- */
-Timer::Timer()
-{
-	_tv.tv_sec = 0;
-	_tv.tv_usec = 0;
-	_period = 0;
-}
-
-Timer::~Timer()
-{
-
-}
-
-bool Timer::set_time(timeval tv)
-{
-	if(tv.tv_sec < 0 || tv.tv_usec < 0)
-		return false;
-
-	_tv = tv;
-
-	return true;
-}
-
-//时间格式：11:07:47
-bool Timer::set_time(string tv)
-{
-    time_t cur_t;
-    struct tm* cur_tm;
-    struct tm dst_tm;
-
-    time(&cur_t);
-    cur_tm=localtime(&cur_t);
-
-    memset(&dst_tm, 0, sizeof(dst_tm));
-	if(NULL == strptime(tv.c_str(), "%H:%M:%S", &dst_tm))
-		return false;
-    
-	dst_tm.tm_mday = cur_tm->tm_mday;
-   	dst_tm.tm_mon = cur_tm->tm_mon;
-    dst_tm.tm_year = cur_tm->tm_year;
-    dst_tm.tm_wday = cur_tm->tm_wday;
-    dst_tm.tm_yday = cur_tm->tm_yday;
-    dst_tm.tm_isdst = cur_tm->tm_isdst;
-
-	int interval = mktime(&dst_tm) - cur_t;
-	if(interval <= 0)
-		return false; 
-
-	_tv.tv_sec = interval;
-	_tv.tv_usec = 0;
-	_period = 0;
-
-	return true;
-}
-
-timeval Timer::get_time() const
-{
-	return _tv;
-}
-
-void Timer::set_period(uint32_t period)
-{
-	_period = period;
-}
-
-uint32_t Timer::get_period() const
-{
-	return _period;
-}
-
 
 /*---------------------------------------------------------------
  * TimerList definitions
@@ -94,8 +21,16 @@ TimerList::~TimerList()
 {
 	evtimer_del(_evTime);
 	event_base_free(_base);
+	
+	list<Timer*>::iterator it; 	
+    for(it = _list.begin(); it != _list.end(); ++it)
+    {   
+        delete (*it);
+    } 	
 }
 
+
+//todo: add checking for if the time is correct
 static void internal_onTimer(int sock, short event, void *arg)
 {
 	cout << "internal onTimer" << endl;
@@ -117,7 +52,7 @@ static void internal_onTimer(int sock, short event, void *arg)
 
 
 	//如果定时器是周期性的，再次加入链表
-	if(tm != NULL & (tm->get_period() > 0))
+	if((tm != NULL) & (tm->get_period() > 0))
 	{
 		timeval tv = tm->get_time();
 		tv.tv_sec = tm->get_period();
