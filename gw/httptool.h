@@ -3,13 +3,11 @@
 
 #include <string>
 
-#include <curl/curl.h>
-
-class HttpDownloadDomain
+class HttpTool
 {
 public:
-	HttpDownloadDomain(bool* cancel);
-	~HttpDownloadDomain();
+	HttpTool();
+	~HttpTool();
 	    /** 
     * @brief HTTP POST请求 
     * @param strUrl 输入参数,请求的Url地址,如:http://www.baidu.com 
@@ -18,7 +16,6 @@ public:
     * @return 返回是否Post成功 
     */  
     int Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse); 
-	bool *cancel_;
 };
 
 #endif

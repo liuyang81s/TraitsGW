@@ -1,13 +1,11 @@
-#include <iostream>
+#include <curl/curl.h>
+#include "httptool.h"
 
-#include "http.h"
-
-HttpDownloadDomain::HttpDownloadDomain(bool* cancel)
+HttpTool::HttpTool()
 {
-	cancel_ = cancel;
 }
 
-HttpDownloadDomain::~HttpDownloadDomain()
+HttpTool::~HttpTool()
 {
 }
 
@@ -24,7 +22,7 @@ static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 	return nmemb;  
 }  
 
-int HttpDownloadDomain::Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse)  
+int HttpTool::Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse)  
 {  
 	CURLcode res;  
 	CURL* curl = curl_easy_init(); 
@@ -48,8 +46,9 @@ int HttpDownloadDomain::Post(const std::string & strUrl, const std::string & str
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);  
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);  
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);  
-	//curl_easy_setopt(curl,CURLOPT_PROXY,"127.0.0.1:8888");
+
 	res = curl_easy_perform(curl);  
 	curl_easy_cleanup(curl);  
 	return res;  
-}  
+} 
+ 

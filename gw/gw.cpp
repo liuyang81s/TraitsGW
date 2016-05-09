@@ -10,7 +10,7 @@
 #include <json-c/bits.h>
 
 #include "main.h"
-#include "http.h"
+#include "httptool.h"
 #include "dev.h"
 #include "serial.h"
 #include "gw.h"
@@ -119,7 +119,7 @@ string TraitsGW::get_self_id()
 	return id;
 }
 
-bool TraitsGW::request_init()
+TRAITScode TraitsGW::request_init()
 {
 	static string init_url = "init.do";
 
@@ -128,7 +128,7 @@ bool TraitsGW::request_init()
 	if(!config_file) {
 		cout << CONFIG_PATH << " not found" << endl;
 		//todo: log
-		return false;	
+		return TRAITSE_CONFIG_FILE_NOT_FOUND;	
 	}
 
 	string line;
@@ -155,14 +155,14 @@ bool TraitsGW::request_init()
 
 	if(vendor.empty() || gage_name.empty()
 		||gage_type.empty() || gage_no.empty())
-		return false;
+		return TRAITSE_CONFIG_PARAM_NOT_FOUND;
 
 	self_id = get_self_id();
 #ifdef TRAITS_DEBUG_GW
 		cout << "self_id = " << self_id << endl;  
 #endif
 	if(self_id == "")
-		return false;
+		return TRAITSE_MAC_NOT_FOUND;
 
 	//send 'init' request to server
 	json_object* init_object;
@@ -177,25 +177,23 @@ bool TraitsGW::request_init()
 #ifdef TRAITS_DEBUG_GW
     cout << strPost << endl;
 #endif
+    json_object_put(init_object);
 
     string  strUrl = server_url + init_url;
     string  strResponse;
-        bool i = 0;
-        HttpDownloadDomain hdd(&i);
-        hdd.Post(strUrl, strPost, strResponse);
-
-    json_object_put(init_object);
+    HttpTool hdd;
+    hdd.Post(strUrl, strPost, strResponse);
     
 	if(strResponse.empty()){
         cout << "response empty" << endl;
-        return false;
+        return TRAITSE_RESPONSE_NONE;
     } else {
         cout << "strResponse=" << strResponse << endl;
-		return true;
+		return TRAITSE_OK;
 	}
 }
 
-bool TraitsGW::heartbeat()
+TRAITScode TraitsGW::heartbeat()
 {
 	static string hb_url = "refresh.do";
 
@@ -210,8 +208,7 @@ bool TraitsGW::heartbeat()
 
     string  strUrl = server_url + hb_url;
         string  strResponse;
-        bool i = 0;
-        HttpDownloadDomain hdd(&i);
+        HttpTool hdd;
         hdd.Post(strUrl, strPost, strResponse);
 
     json_object_put(hb_object);
@@ -220,13 +217,13 @@ bool TraitsGW::heartbeat()
 #ifdef TRAITS_DEBUG_HB
         cout << "response empty" << endl;
 #endif
-        return false;
+        return TRAITSE_RESPONSE_NONE;
     } else {
 #ifdef TRAITS_DEBUG_HB
         cout << "strResponse=" << strResponse << endl;
 #endif
 		//todo:parse strResponse, and handle it
-		return true;
+		return TRAITSE_OK;
 	}
 
 }
@@ -239,7 +236,7 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 } 
 
 
-bool TraitsGW::report(uint8_t *packet, const int size)
+TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 {
     static string url = server_url + "data.do";
 
@@ -269,8 +266,7 @@ bool TraitsGW::report(uint8_t *packet, const int size)
 #endif
 
     string  strResponse;
-    bool i = 0;
-    HttpDownloadDomain hdd(&i);
+    HttpTool hdd;
     hdd.Post(url, strPost, strResponse);
 
     json_object_put(data_object);
@@ -279,27 +275,27 @@ bool TraitsGW::report(uint8_t *packet, const int size)
 #ifdef TARAITS_DEBUG_GW 
         cout << "response empty" << endl;
 #endif
-        return false;
+        return TRAITSE_RESPONSE_NONE;
     } else {
         cout << "strResponse=" << strResponse << endl;
-		return true;
+		return TRAITSE_OK;
 	}
 }
 
-bool TraitsGW::init_response_handler(const string& response)
+TRAITScode TraitsGW::init_response_handler(const string& response)
 {
     if(response.empty())
-       return false; 
+       return TRAITSE_RESPONSE_NONE; 
   
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
         cout << "init response string is invalid" << endl;
         //todo: log
-        return false;
+        return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
-	bool ret = false;
+	TRAITScode ret = TRAITSE_OK;
     string send_content;
     int is_listen;
     int stype;
@@ -333,6 +329,7 @@ bool TraitsGW::init_response_handler(const string& response)
         proto = PROTO_INVALID;
         cout << "'modbusType' invalid" << endl;
         //todo: log
+		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
       
@@ -347,6 +344,7 @@ bool TraitsGW::init_response_handler(const string& response)
         uart_mode = UART_INVALID;
         cout << "'isListen' invalid" << endl;
         //todo: log
+		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
 
@@ -363,6 +361,7 @@ bool TraitsGW::init_response_handler(const string& response)
         send_type = SEND_INVALID;
         cout << "'send_type' invalid" << endl;
         //todo: log
+		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
 
@@ -383,6 +382,7 @@ bool TraitsGW::init_response_handler(const string& response)
         plan_mode = PLAN_INVALID;
         cout << "'isPlan' invalid" << endl;
         //todo: log
+		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
 
@@ -406,12 +406,14 @@ bool TraitsGW::init_response_handler(const string& response)
 			cout << "Timer alloction failed" << endl;
 			//todo:log
             tmlist->clean_timers();
+			ret = TRAITSE_MEM_ALLOC_FAILED;
             goto release_json_obj;
-			ret = false;
 		}
 		if(false == tm->set_time(tv)) {
 			//todo:log it
 			//or led indication
+			//plan time format error, but we just ignore it
+			//and move to next
 			continue;
 		}
 		tm->onTime = serial_onTime;
@@ -423,11 +425,11 @@ release_json_obj:
     json_object_put(temp_obj);
     json_object_put(full_obj);
 
-    if(false == ret || 0 != srv_ret_code){
+    if(TRAITSE_OK != ret || 0 != srv_ret_code){
         //todo: LED error indication
         if(0 != srv_ret_code) {
             //todo: log 'server ret 1'
-            ret = true; //packet parse correctly, so we return true
+            ret = TRAITSE_OK; //packet parse correctly, so we return true
         }
         return ret;
     }
@@ -461,20 +463,20 @@ release_json_obj:
         rc = -1;
     if(rc){
         cout << "ERR: pthread_create failed with " << rc << endl;
-        ret = false;
+        ret = T;
     }     
    
     SERIAL_RUNNING = false;
     pthread_join(t_serial, NULL);
 
-    return true;
+    return TRAITSE_OK;
 //todo:
-不应该在init_handler中开启serial thread，因为会导致
-init_handler函数阻塞，无法返回    
+//不应该在init_handler中开启serial thread，因为会导致
+//init_handler函数阻塞，无法返回    
 }
 
 
-bool TraitsGW::data_response_handler(const string& response)
+TRAITScode TraitsGW::data_response_handler(const string& response)
 {
     if(response.empty())
        return false; 
@@ -502,7 +504,7 @@ bool TraitsGW::data_response_handler(const string& response)
 }
 
 
-bool TraitsGW::hb_response_handler(const string& response)
+TRAITScode TraitsGW::hb_response_handler(const string& response)
 {
     if(response.empty())
        return false; 

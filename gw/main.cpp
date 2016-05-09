@@ -1,9 +1,7 @@
 #include <iostream>
-#include <json-c/json.h>
 #include <pthread.h>
 #include <unistd.h>
 
-#include "http.h"
 #include "gw.h"
 #include "serial.h"
 #include "timer.h"

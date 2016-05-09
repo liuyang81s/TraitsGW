@@ -5,8 +5,10 @@
 #include <stdint.h>
 #include "serial.h"
 #include "timerlist.h"
+#include "traits.h"
 
 using namespace std;
+
 
 extern bool GW_RUNNING;
 extern bool HB_RUNNING;
@@ -43,17 +45,17 @@ public:
 	TraitsGW(const string& url);
 	~TraitsGW();	
 
-	bool request_init();
-	bool heartbeat();
-	bool report(uint8_t *packet, const int size);
+	TRAITScode request_init();
+	TRAITScode heartbeat();
+	TRAITScode report(uint8_t *packet, const int size);
 
 protected:
 	void init();
 	string get_self_id();
 
-    bool init_response_handler(const string& response);
-    bool data_response_handler(const string& response);
-    bool hb_response_handler(const string& response);
+    TRAITScode init_response_handler(const string& response);
+    TRAITScode data_response_handler(const string& response);
+    TRAITScode hb_response_handler(const string& response);
 
 	/* device related */
 	string gage_name;
