@@ -8,8 +8,6 @@
 
 #include "timer.h"
 
-using namespace std;
-
 class TimerList
 {
 public:
@@ -21,15 +19,16 @@ public:
 
 	void add_timer(Timer* tm);
 	void delete_timer(Timer* tm);
-	void update_timer(timeval tv);
+	void update_timer(const timeval& tv);
+    void clean_timers();    
 
 	struct event* get_event();
-	list<Timer*>* get_timers();		
+    std::list<Timer*>* get_timers();		
 
 protected:
 	struct event_base* _base;
 	struct event* _evTime;
-	list<Timer*> _list;
+    std::list<Timer*> _list;
 };
 
 #endif

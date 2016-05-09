@@ -1,34 +1,10 @@
 #include <iostream>
-#include <string>
-#include <string.h>
-#include <stdint.h>
 #include <event.h>
 
 #include "timer.h"
 #include "timerlist.h"
 
 using namespace std;
-
-/*---------------------------------------------------------------
- * TimerList definitions
- */
-TimerList::TimerList()
-{
-	_base = event_base_new();
-}
-
-TimerList::~TimerList()
-{
-	evtimer_del(_evTime);
-	event_base_free(_base);
-	
-	list<Timer*>::iterator it; 	
-    for(it = _list.begin(); it != _list.end(); ++it)
-    {   
-        delete (*it);
-    } 	
-}
-
 
 //todo: add checking for if the time is correct
 static void internal_onTimer(int sock, short event, void *arg)
@@ -69,9 +45,26 @@ static void internal_onTimer(int sock, short event, void *arg)
 	}
 }
 
+/*---------------------------------------------------------------
+ * TimerList definitions
+ */
+TimerList::TimerList()
+{
+	_base = event_base_new();
+	_evTime = evtimer_new(_base, internal_onTimer, this);
+}
+
+TimerList::~TimerList()
+{
+	evtimer_del(_evTime);
+	event_base_free(_base);
+
+    clean_timers();
+}
+
 void TimerList::init()
 {
-	_evTime = evtimer_new(_base, internal_onTimer, this);
+	//_evTime = evtimer_new(_base, internal_onTimer, this);
 }
 
 void TimerList::start()
@@ -123,8 +116,16 @@ list<Timer*>* TimerList::get_timers()
 	return &_list;
 }
 
+void TimerList::clean_timers()
+{
+	list<Timer*>::iterator it; 	
+    for(it = _list.begin(); it != _list.end(); ++it)
+    {   
+        delete (*it);
+    } 	
+}
 
-void TimerList::update_timer(timeval tv)
+void TimerList::update_timer(const timeval& tv)
 {
     list<Timer*>::iterator it; 
 

@@ -23,7 +23,7 @@ Timer::~Timer()
 {
 }
 
-bool Timer::set_time(timeval tv)
+bool Timer::set_time(const timeval& tv)
 {
 	if(tv.tv_sec < 0 || tv.tv_usec < 0)
 		return false;
@@ -34,7 +34,7 @@ bool Timer::set_time(timeval tv)
 }
 
 //时间格式：11:07:47
-bool Timer::set_time(string tv)
+bool Timer::set_time(const string& tv)
 {
     time_t cur_t;
     struct tm* cur_tm;
@@ -70,7 +70,7 @@ timeval Timer::get_time() const
 	return _tv;
 }
 
-void Timer::set_period(uint32_t period)
+void Timer::set_period(const uint32_t period)
 {
 	_period = period;
 }
@@ -105,7 +105,7 @@ uint8_t WeeklyTimer::get_week_mask() const
 	return _week_mask;
 }
 
-bool WeeklyTimer::set_week_mask(uint8_t week_mask)
+bool WeeklyTimer::set_week_mask(const uint8_t week_mask)
 {
 	//msb of 'week_mask' must be 0
 	if(0x80 & week_mask)

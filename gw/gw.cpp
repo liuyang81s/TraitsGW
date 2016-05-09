@@ -12,6 +12,7 @@
 #include "main.h"
 #include "http.h"
 #include "dev.h"
+#include "serial.h"
 #include "gw.h"
 
 #define	CONFIG_PATH "/etc/config/device" 
@@ -30,7 +31,7 @@ TraitsGW::TraitsGW()
 	server_url = "http://traits.imwork.net:10498/AnalyzeServer/system/";
 }
 
-TraitsGW::TraitsGW(string url)
+TraitsGW::TraitsGW(const string& url)
 {
 	init();
 	server_url = url;
@@ -49,7 +50,12 @@ void TraitsGW::init()
     proto = PROTO_INVALID;
     plan_mode = PLAN_INVALID;
     collect_cycle = 0;
-	tmlist = NULL;
+	tmlist = new TimerList();
+	if(tmlist == NULL) {
+		cout << "TimerList alloction failed" << endl;
+		//todo: log
+        //todo: throw exception
+	}	
     
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
@@ -64,7 +70,8 @@ void TraitsGW::init()
 
 TraitsGW::~TraitsGW()
 {
-
+    if(NULL != tmlist)
+        delete tmlist;
 }
 
 static string get_attr_from_line(string line)
@@ -232,7 +239,7 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 } 
 
 
-bool TraitsGW::report(uint8_t *packet, int size)
+bool TraitsGW::report(uint8_t *packet, const int size)
 {
     static string url = server_url + "data.do";
 
@@ -293,10 +300,14 @@ bool TraitsGW::init_response_handler(const string& response)
     }
 
 	bool ret = false;
+    string send_content;
+    int is_listen;
+    int stype;
+    int isplan;
 
     //parse 'code'
     json_object_object_get_ex(full_obj, "code", &temp_obj);
-    int ret_code = json_object_get_int(temp_obj);
+    int srv_ret_code = json_object_get_int(temp_obj);
     
     //parse 'errorMessage'
     json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
@@ -305,7 +316,10 @@ bool TraitsGW::init_response_handler(const string& response)
     //parse 'time'
     json_object_object_get_ex(full_obj, "time", &temp_obj);
     string server_time(json_object_get_string(temp_obj));
-    
+#ifdef TRAITS_DEBUG_GW
+    cout << "server_time = " << server_time << endl;
+#endif    
+
     //parse 'modbusType'
     json_object_object_get_ex(full_obj, "modbusType", &temp_obj);
     int p = json_object_get_int(temp_obj);
@@ -315,60 +329,70 @@ bool TraitsGW::init_response_handler(const string& response)
         proto = PROTO_MODBUS;
     else if(2 == p)
         proto = PROTO_OTHER;
-    else
+    else {
         proto = PROTO_INVALID;
+        cout << "'modbusType' invalid" << endl;
+        //todo: log
+        goto release_json_obj;
+    }
       
     //parse 'isListen'
     json_object_object_get_ex(full_obj, "isListen", &temp_obj);
-    int is_listen = json_object_get_int(temp_obj);
+    is_listen = json_object_get_int(temp_obj);
     if(0 == is_listen)
         uart_mode = UART_POLL;
     else if(1 == is_listen)
         uart_mode = UART_LISTEN;
-    else
+    else {
         uart_mode = UART_INVALID;
+        cout << "'isListen' invalid" << endl;
+        //todo: log
+        goto release_json_obj;
+    }
 
     //parse 'sendType'
     json_object_object_get_ex(full_obj, "sendType", &temp_obj);
-    int stype = json_object_get_int(temp_obj);
+    stype = json_object_get_int(temp_obj);
     if(0 == stype)
         send_type = SEND_NOTHING;
     else if(1 == stype)
         send_type = SEND_ASCII;
     else if(2 == stype)
         send_type = SEND_HEX;
-    else
+    else {
         send_type = SEND_INVALID;
+        cout << "'send_type' invalid" << endl;
+        //todo: log
+        goto release_json_obj;
+    }
 
     //parse 'sendContent'
     json_object_object_get_ex(full_obj, "sendContent", &temp_obj);
-    string send_content(json_object_get_string(temp_obj));
+    send_content = json_object_get_string(temp_obj);
       
     //parse 'isPlan'
     json_object_object_get_ex(full_obj, "isPlan", &temp_obj);
-    int isplan = json_object_get_int(temp_obj);
+    isplan = json_object_get_int(temp_obj);
     if(0 == isplan)
         plan_mode = PLAN_NONE;
     else if(1 == isplan)
         plan_mode = PLAN_REMAIN;
     else if(2 == isplan)
         plan_mode = PLAN_UPDATE;
-    else 
+    else { 
         plan_mode = PLAN_INVALID;
+        cout << "'isPlan' invalid" << endl;
+        //todo: log
+        goto release_json_obj;
+    }
 
     //parse 'collectCycle'
     json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
     collect_cycle = json_object_get_int(temp_obj) & 0xff;
     
 	//parse 'planList'
-	tmlist = new TimerList();
-	if(tmlist == NULL) {
-		cout << "TimerList alloction failed" << endl;
-		//todo: log
-		ret = false;
-		goto out;
-	}	
-	tmlist->init();
+    //tmlist->init() maybe not necessary
+	//tmlist->init();
     
 	json_object_object_get_ex(full_obj, "planList", &temp_obj);
     json_object* timer_obj;
@@ -381,8 +405,9 @@ bool TraitsGW::init_response_handler(const string& response)
 		if(NULL == tm){
 			cout << "Timer alloction failed" << endl;
 			//todo:log
+            tmlist->clean_timers();
+            goto release_json_obj;
 			ret = false;
-			goto timer_mem_failed; 
 		}
 		if(false == tm->set_time(tv)) {
 			//todo:log it
@@ -392,20 +417,60 @@ bool TraitsGW::init_response_handler(const string& response)
 		tm->onTime = serial_onTime;
 		tmlist->add_timer(tm);
     }
-
  
-    //todo:time adjustment
-
-	ret = true;
-
-timer_mem_failed:
-	delete tmlist; 
-out:    
+release_json_obj:    
     json_object_put(timer_obj);
     json_object_put(temp_obj);
     json_object_put(full_obj);
 
-    return ret;
+    if(false == ret || 0 != srv_ret_code){
+        //todo: LED error indication
+        if(0 != srv_ret_code) {
+            //todo: log 'server ret 1'
+            ret = true; //packet parse correctly, so we return true
+        }
+        return ret;
+    }
+    
+
+    //set system time
+    struct tm tm;
+    memset(&tm, 0, sizeof(struct tm));
+    if(NULL == strptime(server_time.c_str(), "%Y-%m-%d %H:%M:%S", &tm)) {
+        cout << "server time format error" << endl;
+        //todo:log 
+        //不设置时间，取RTC时间
+    } else {  
+        struct timeval tv;
+        //考虑到server取时间、传输、客户端处理等过程
+        //客户端设置的时间比server时间多加1秒
+        tv.tv_sec = mktime(&tm) + 1;
+        tv.tv_usec = 0;
+        settimeofday(&tv, NULL);
+    }
+
+    //start serial thread, according uart mode
+    //and ignore sendContent temporarily
+    pthread_t t_serial;
+    int rc;
+    if(UART_POLL == uart_mode)
+        rc = pthread_create(&t_serial, NULL, serial_poll_run, &tmlist);
+    else if(UART_LISTEN == uart_mode)
+        rc = pthread_create(&t_serial, NULL, serial_listen_run, NULL);
+    else
+        rc = -1;
+    if(rc){
+        cout << "ERR: pthread_create failed with " << rc << endl;
+        ret = false;
+    }     
+   
+    SERIAL_RUNNING = false;
+    pthread_join(t_serial, NULL);
+
+    return true;
+//todo:
+不应该在init_handler中开启serial thread，因为会导致
+init_handler函数阻塞，无法返回    
 }
 
 
@@ -424,7 +489,7 @@ bool TraitsGW::data_response_handler(const string& response)
 
     //parse 'code'
     json_object_object_get_ex(full_obj, "code", &temp_obj);
-    int ret_code = json_object_get_int(temp_obj);
+    int srv_ret_code = json_object_get_int(temp_obj);
     
     //parse 'errorMessage'
     json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
@@ -452,7 +517,7 @@ bool TraitsGW::hb_response_handler(const string& response)
 
     //parse 'code'
     json_object_object_get_ex(full_obj, "code", &temp_obj);
-    int ret_code = json_object_get_int(temp_obj);
+    int srv_ret_code = json_object_get_int(temp_obj);
     
     //parse 'errorMessage'
     json_object_object_get_ex(full_obj, "errorMessage", &temp_obj);
@@ -503,7 +568,6 @@ void* gw_run(void* arg)
 	TraitsGW* gw = (TraitsGW*)arg;
 	gw->request_init();
 	//todo: if request_init return false, then ... 
-
 
 
 	Device* dev = new TestDevice();

@@ -21,7 +21,6 @@ pthread_cond_t  rb_cond;
 
 int main()
 {
-    pthread_t t_serial;
 	pthread_t t_gw;
 	pthread_t t_hb;
 
@@ -65,20 +64,12 @@ int main()
 		return -rc2;
 	}
 	
-	int rc3 = pthread_create(&t_serial, NULL, serial_poll_run, &tmlist);
-	if(rc3){
-		cout << "ERR: pthread_create failed with " << rc3 << endl;
-		return -rc3;
-	}
-
 
 	HB_RUNNING = false;
 	GW_RUNNING = false;
-	SERIAL_RUNNING = false;
 
 	pthread_join(t_hb, NULL);
 	pthread_join(t_gw, NULL);
-	pthread_join(t_serial, NULL);
 	
 	pthread_mutex_destroy(&rb_mutex);
 	pthread_cond_destroy(&rb_cond);

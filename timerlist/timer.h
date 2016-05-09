@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-using namespace std;
-
 typedef void (*TIMERFUNC)(void *arg);
 
 class Timer
@@ -13,12 +11,12 @@ public:
 	Timer();
 	virtual ~Timer();
 
-	bool set_time(timeval tv);
-	bool set_time(std::string tv);
+	bool set_time(const timeval& tv);
+	bool set_time(const std::string& tv);
 	timeval get_time() const;
 	
 	virtual uint32_t get_period() const;
-	virtual void set_period(uint32_t period);
+	virtual void set_period(const uint32_t period);
 
 	TIMERFUNC onTime;
 protected:
@@ -29,7 +27,7 @@ protected:
 class WeeklyTimer: public Timer
 {
 public:
-	WeeklyTimer(uint8_t week_mask);
+	WeeklyTimer(const uint8_t week_mask);
 	virtual ~WeeklyTimer();
 
 	uint32_t get_period() const;
@@ -37,7 +35,7 @@ public:
 	/*
 	 * set_period has no effect here
 	 */
-	void set_period(uint32_t period) { }
+	void set_period(const uint32_t period) { }
 
 	uint8_t get_week_mask() const;
 	/*
@@ -45,7 +43,7 @@ public:
 	 *  00000001, monday
 	 *  00011111, monday -> friday
 	 */	
-	bool set_week_mask(uint8_t week_mask);
+	bool set_week_mask(const uint8_t week_mask);
 
 protected:
 	uint8_t _week_mask;	

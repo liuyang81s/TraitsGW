@@ -40,12 +40,12 @@ class TraitsGW
 {
 public:
 	TraitsGW();
-	TraitsGW(string url);
+	TraitsGW(const string& url);
 	~TraitsGW();	
 
 	bool request_init();
 	bool heartbeat();
-	bool report(uint8_t *packet, int size);
+	bool report(uint8_t *packet, const int size);
 
 protected:
 	void init();
