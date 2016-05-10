@@ -1,6 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
+#include <sys/time.h>
 #include <stdint.h>
 
 typedef void (*TIMERFUNC)(void *arg);
@@ -20,7 +21,7 @@ public:
 
 	TIMERFUNC onTime;
 protected:
-	timeval _tv;
+	struct timeval _tv;
 	uint32_t _period;
 };
 
