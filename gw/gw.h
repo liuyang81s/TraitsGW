@@ -49,6 +49,12 @@ public:
 	TRAITScode heartbeat();
 	TRAITScode report(uint8_t *packet, const int size);
 
+    UART_MODE get_uart_mode() const;
+    SEND_TYPE get_send_type() const;
+    PROTO_TYPE get_proto_type() const;
+    PLAN_MODE get_plan_mode() const;
+	TimerList* get_timerlist() const;		
+
 protected:
 	void init();
 	string get_self_id();

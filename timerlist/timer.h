@@ -11,9 +11,9 @@ public:
 	Timer();
 	virtual ~Timer();
 
-	bool set_time(const timeval& tv);
+	bool set_time(const struct timeval& tv);
 	bool set_time(const std::string& tv);
-	timeval get_time() const;
+	struct timeval get_time() const;
 	
 	virtual uint32_t get_period() const;
 	virtual void set_period(const uint32_t period);

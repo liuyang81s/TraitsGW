@@ -36,7 +36,7 @@ static void internal_onTimer(int sock, short event, void *arg)
 	 	timers->push_back(tm);	
 	}
 
-	//若队列不空个,用下一个timer更新定时器
+	//若队列不空,用下一个timer更新定时器
 	if(!timers->empty())
 	{
 		Timer* tm = timers->front();

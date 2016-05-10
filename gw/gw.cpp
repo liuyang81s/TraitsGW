@@ -287,6 +287,31 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 	}
 }
 
+UART_MODE TraitsGW::get_uart_mode() const
+{
+    return uart_mode;
+}
+
+SEND_TYPE TraitsGW::get_send_type() const
+{
+    return send_type;
+}
+
+PROTO_TYPE TraitsGW::get_proto_type() const
+{
+    return proto;
+}
+
+PLAN_MODE TraitsGW::get_plan_mode() const
+{
+    return plan_mode;
+}
+
+TimerList* TraitsGW::get_timerlist() const
+{
+    return tmlist;
+}
+
 TRAITScode TraitsGW::init_response_handler(const string& response)
 {
     if(response.empty())
@@ -456,25 +481,6 @@ release_json_obj:
         settimeofday(&tv, NULL);
     }
 
-#if 0
-    //start serial thread, according uart mode
-    //and ignore sendContent temporarily
-    pthread_t t_serial;
-    int rc;
-    if(UART_POLL == uart_mode)
-        rc = pthread_create(&t_serial, NULL, serial_poll_run, &tmlist);
-    else if(UART_LISTEN == uart_mode)
-        rc = pthread_create(&t_serial, NULL, serial_listen_run, NULL);
-    else
-        rc = -1;
-    if(rc){
-        cout << "ERR: pthread_create failed with " << rc << endl;
-        ret = T;
-    }     
-   
-    SERIAL_RUNNING = false;
-    pthread_join(t_serial, NULL);
-#endif
     return TRAITSE_OK;
 //todo:
 //不应该在init_handler中开启serial thread，因为会导致
@@ -574,9 +580,6 @@ void* gw_run(void* arg)
 	cout << "gw thread running" << endl;		
 
 	TraitsGW* gw = (TraitsGW*)arg;
-	gw->request_init();
-	//todo: if request_init return false, then ... 
-
 
 	Device* dev = new TestDevice();
 	if(NULL == dev) {
