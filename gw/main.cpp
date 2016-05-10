@@ -66,7 +66,6 @@ int main()
 	}
 
     //start serial thread, according uart mode
-    //and ignore sendContent temporarily
     if(UART_POLL == gw.get_uart_mode())
         rc = pthread_create(&t_serial, NULL, serial_poll_run, gw.get_timerlist());
     else if(UART_LISTEN == gw.get_uart_mode())
@@ -78,10 +77,11 @@ int main()
         goto FATAL_OUT;
     }                                    
                                
-    SERIAL_RUNNING = false;     
     pthread_join(t_serial, NULL);
+    SERIAL_RUNNING = false;     
 
-
+THREAD_SERIAL_ERROR:
+    //todo: how to make thread cancel?
 	pthread_join(t_gw, NULL);
 	GW_RUNNING = false;
 
@@ -101,6 +101,7 @@ FATAL_OUT:
 	while(true) {
 		cout << "fatal error" << endl;	
 		//TODO:LED indication
+        sleep(5);
 	}
 
 	cout << "main thread exit" << endl;

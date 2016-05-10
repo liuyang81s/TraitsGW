@@ -65,6 +65,9 @@ void TraitsGW::init()
 	self_id = "123456";
 	
 	uart_mode = UART_POLL;
+    proto = PROTO_MODBUS;
+    send_type = SEND_HEX;
+    plan_mode = PLAN_NONE;
 #endif
 }
 
@@ -123,6 +126,7 @@ TRAITScode TraitsGW::request_init()
 {
 	static string init_url = "init.do";
 
+#ifndef TRAITS_DEBUG
 	//read config file, get gage info 
 	ifstream config_file(CONFIG_PATH);
 	if(!config_file) {
@@ -145,7 +149,8 @@ TRAITScode TraitsGW::request_init()
 			gage_no = get_attr_from_line(line);
 		else
 			continue;
-	}  					
+	}  				
+#endif    
 #ifdef TRAITS_DEBUG_GW
 		cout << "vendor = " << vendor << endl;
 		cout << "gage_name = " << gage_name << endl;
@@ -157,7 +162,9 @@ TRAITScode TraitsGW::request_init()
 		||gage_type.empty() || gage_no.empty())
 		return TRAITSE_CONFIG_PARAM_NOT_FOUND;
 
+#ifndef TRAITS_DEBUG
 	self_id = get_self_id();
+#endif
 #ifdef TRAITS_DEBUG_GW
 		cout << "self_id = " << self_id << endl;  
 #endif
@@ -180,6 +187,7 @@ TRAITScode TraitsGW::request_init()
     json_object_put(init_object);
 
     string  strUrl = server_url + init_url;
+    cout << "strUrl = " << strUrl << endl;
     string  strResponse;
     HttpTool htool;
     htool.Post(strUrl, strPost, strResponse);
@@ -346,6 +354,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     cout << "server_time = " << server_time << endl;
 #endif    
 
+#ifndef TRAITS_DEBUG    
     //parse 'modbusType'
     json_object_object_get_ex(full_obj, "modbusType", &temp_obj);
     int p = json_object_get_int(temp_obj);
@@ -463,7 +472,7 @@ release_json_obj:
         }
         return ret;
     }
-    
+#endif    
 
     //set system time
     struct tm tm;
@@ -482,9 +491,6 @@ release_json_obj:
     }
 
     return TRAITSE_OK;
-//todo:
-//不应该在init_handler中开启serial thread，因为会导致
-//init_handler函数阻塞，无法返回    
 }
 
 
