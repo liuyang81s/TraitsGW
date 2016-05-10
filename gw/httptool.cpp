@@ -25,9 +25,10 @@ static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
 int HttpTool::Post(const std::string & strUrl, const std::string & strPost, std::string & strResponse)  
 {  
 	CURLcode res;  
-	CURL* curl = curl_easy_init(); 
 	struct curl_slist *headerlist=NULL;
 	static const char buf[] = "Expect:";
+	
+	CURL* curl = curl_easy_init(); 
 	if(NULL == curl)  
 	{  
 		return CURLE_FAILED_INIT;  
@@ -49,6 +50,7 @@ int HttpTool::Post(const std::string & strUrl, const std::string & strPost, std:
 
 	res = curl_easy_perform(curl);  
 	curl_easy_cleanup(curl);  
+	
 	return res;  
 } 
  

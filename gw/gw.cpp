@@ -181,15 +181,20 @@ TRAITScode TraitsGW::request_init()
 
     string  strUrl = server_url + init_url;
     string  strResponse;
-    HttpTool hdd;
-    hdd.Post(strUrl, strPost, strResponse);
+    HttpTool htool;
+    htool.Post(strUrl, strPost, strResponse);
     
 	if(strResponse.empty()){
+#ifdef TRAITS_DEBUG_GW
         cout << "response empty" << endl;
+#endif
+		//todo:log
         return TRAITSE_RESPONSE_NONE;
     } else {
+#ifdef TRAITS_DEBUG_GW
         cout << "strResponse=" << strResponse << endl;
-		return TRAITSE_OK;
+#endif
+		return init_response_handler(strResponse);
 	}
 }
 
@@ -451,6 +456,7 @@ release_json_obj:
         settimeofday(&tv, NULL);
     }
 
+#if 0
     //start serial thread, according uart mode
     //and ignore sendContent temporarily
     pthread_t t_serial;
@@ -468,7 +474,7 @@ release_json_obj:
    
     SERIAL_RUNNING = false;
     pthread_join(t_serial, NULL);
-
+#endif
     return TRAITSE_OK;
 //todo:
 //不应该在init_handler中开启serial thread，因为会导致
@@ -479,14 +485,14 @@ release_json_obj:
 TRAITScode TraitsGW::data_response_handler(const string& response)
 {
     if(response.empty())
-       return false; 
+       return TRAITSE_RESPONSE_NONE; 
   
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
         cout << "init response string is invalid" << endl;
         //todo: log
-        return false;
+        return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
     //parse 'code'
@@ -500,21 +506,21 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     json_object_put(full_obj);
     json_object_put(temp_obj);
     
-    return true;
+    return TRAITSE_OK;
 }
 
 
 TRAITScode TraitsGW::hb_response_handler(const string& response)
 {
     if(response.empty())
-       return false; 
+       return TRAITSE_RESPONSE_NONE; 
   
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
         cout << "init response string is invalid" << endl;
         //todo: log
-        return false;
+        return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
     //parse 'code'
@@ -559,7 +565,7 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     json_object_put(temp_obj);
 
     
-    return true;
+    return TRAITSE_OK;
 }
 
 //网络数据转发线程
