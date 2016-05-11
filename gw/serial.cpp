@@ -102,7 +102,7 @@ void* serial_poll_run(void* arg)
 
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
-        cout << "Open " << DEVNAME << "failed" << endl;
+        cout << "Open " << DEVNAME << " failed" << endl;
 		//todo: log
         goto out;
     } 

@@ -32,8 +32,8 @@ typedef enum{
 
 typedef enum{
     PLAN_NONE = 0,     //there is no plan
-    PLAN_REMAIN,       //use old plan
     PLAN_UPDATE,       //update to new plan
+    PLAN_REMAIN,       //remain old plan
     PLAN_INVALID,
 }PLAN_MODE;
 

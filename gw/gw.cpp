@@ -414,9 +414,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     if(0 == isplan)
         plan_mode = PLAN_NONE;
     else if(1 == isplan)
-        plan_mode = PLAN_REMAIN;
-    else if(2 == isplan)
-        plan_mode = PLAN_UPDATE;
+        plan_mode = PLAN_UPDATA;
     else { 
         plan_mode = PLAN_INVALID;
         cout << "'isPlan' invalid" << endl;
@@ -553,9 +551,9 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     if(0 == isplan)
         plan_mode = PLAN_NONE;
     else if(1 == isplan)
-        plan_mode = PLAN_REMAIN;
-    else if(2 == isplan)
         plan_mode = PLAN_UPDATE;
+    else if(2 == isplan)
+        plan_mode = PLAN_REMAIN;
     else 
         plan_mode = PLAN_INVALID;
 

@@ -1,6 +1,8 @@
 #include <curl/curl.h>
 #include "httptool.h"
 
+#define POST_TIMEOUT 5
+
 HttpTool::HttpTool()
 {
 }
@@ -45,8 +47,8 @@ int HttpTool::Post(const std::string & strUrl, const std::string & strPost, std:
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);  
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);  
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);  
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);  
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);  
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, POST_TIMEOUT);  
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, POST_TIMEOUT);  
 
 	res = curl_easy_perform(curl);  
 	curl_easy_cleanup(curl);  
