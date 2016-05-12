@@ -18,7 +18,8 @@ class Device
 public:
 	Device();
 	virtual ~Device();
-		
+    
+    virtual bool send_cmd(uint8_t* cmd, int fd) = 0; 
 	virtual int recognize_packet(uint8_t* buf) = 0;
 	
 protected:
@@ -40,6 +41,7 @@ public:
 	TestDevice();
 	virtual ~TestDevice();
 	
+    bool send_cmd(uint8_t* cmd, int fd); 
 	int recognize_packet(uint8_t* buf);
 
 protected:
@@ -47,4 +49,5 @@ protected:
 };
 
 #endif
+
 

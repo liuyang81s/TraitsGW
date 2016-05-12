@@ -33,3 +33,9 @@ int TestDevice::recognize_packet(uint8_t* buf)
 	return 1;
 }
 
+bool TestDevice::send_cmd(uint8_t* cmd, int fd)
+{
+    return true;
+}
+
+
