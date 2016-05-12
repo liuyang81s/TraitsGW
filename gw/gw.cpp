@@ -11,7 +11,7 @@
 
 #include "main.h"
 #include "httptool.h"
-#include "dev.h"
+#include "devs.h"
 #include "serial.h"
 #include "gw.h"
 
@@ -77,7 +77,7 @@ TraitsGW::~TraitsGW()
         delete tmlist;
 }
 
-static string get_attr_from_line(string line)
+static string get_attr_from_line(const string& line)
 {
 	int i = line.find_first_of('\'');	
 	int j = line.find_last_of('\'');
@@ -187,7 +187,6 @@ TRAITScode TraitsGW::request_init()
     json_object_put(init_object);
 
     string  strUrl = server_url + init_url;
-    cout << "strUrl = " << strUrl << endl;
     string  strResponse;
     HttpTool htool;
     htool.Post(strUrl, strPost, strResponse);
@@ -354,7 +353,6 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     cout << "server_time = " << server_time << endl;
 #endif    
 
-#ifndef TRAITS_DEBUG    
     //parse 'modbusType'
     json_object_object_get_ex(full_obj, "modbusType", &temp_obj);
     int p = json_object_get_int(temp_obj);
@@ -414,7 +412,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     if(0 == isplan)
         plan_mode = PLAN_NONE;
     else if(1 == isplan)
-        plan_mode = PLAN_UPDATA;
+        plan_mode = PLAN_UPDATE;
     else { 
         plan_mode = PLAN_INVALID;
         cout << "'isPlan' invalid" << endl;
@@ -435,8 +433,11 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     json_object* timer_obj;
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         timer_obj = json_object_array_get_idx(temp_obj, i);
-		string tv = json_object_to_json_string(timer_obj);
+		//string tv = json_object_to_json_string(timer_obj);
+		string tv = json_object_get_string(timer_obj);
+#ifdef TRAITS_DEBUG_GW
         cout << "timer = " << tv << endl;
+#endif
 		//make new timer, add to timerlist
 		Timer* tm = new WeeklyTimer(collect_cycle);
 		if(NULL == tm){
@@ -451,9 +452,11 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 			//or led indication
 			//plan time format error, but we just ignore it
 			//and move to next
+            cout << "set_time failed" ;
 			continue;
 		}
 		tm->onTime = serial_onTime;
+        cout << "add a timer" << endl;
 		tmlist->add_timer(tm);
     }
  
@@ -470,7 +473,6 @@ release_json_obj:
         }
         return ret;
     }
-#endif    
 
     //set system time
     struct tm tm;
@@ -585,7 +587,7 @@ void* gw_run(void* arg)
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
-	Device* dev = new TestDevice();
+	Device* dev = new SONBEST_SD5110B(0x1);
 	if(NULL == dev) {
 		//todo: log
 		cout << "mem allocation failed" << endl;

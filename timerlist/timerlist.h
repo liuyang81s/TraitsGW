@@ -25,6 +25,8 @@ public:
 	struct event* get_event();
     std::list<Timer*>* get_timers();		
 
+    int size();
+
 protected:
 	struct event_base* _base;
 	struct event* _evTime;

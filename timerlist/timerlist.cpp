@@ -116,6 +116,11 @@ list<Timer*>* TimerList::get_timers()
 	return &_list;
 }
 
+int TimerList::size()
+{
+	return _list.size();
+}
+
 void TimerList::clean_timers()
 {
 	list<Timer*>::iterator it; 	

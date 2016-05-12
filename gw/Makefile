@@ -6,7 +6,7 @@ INCLUDE_DIRS = $(ROOT)/ringbuffer \
                 $(ROOT)/devs
 
 BUILD_DIR = $(BUILDS)/gw
-LINK_LIBS = ringbuffer crc tmlist devs \
+LINK_LIBS = ringbuffer devs crc tmlist \
             json-c curl event pthread
 
 

@@ -74,7 +74,7 @@ int main()
         rc = -1;
     if(rc){
         cout << "ERR: pthread_create failed with " << rc << endl;
-        goto FATAL_OUT;
+        goto THREAD_SERIAL_ERROR;
     }                                    
                                
     pthread_join(t_serial, NULL);

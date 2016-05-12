@@ -8,7 +8,7 @@
 #include "selector.h"
 #include "serial.h"
 #include "main.h"
-#include "dev.h"
+#include "devs.h"
 #include "timerlist.h"
 
 
@@ -16,7 +16,6 @@
 
 using namespace std;
 
-//static const char DEVNAME[] = "/dev/ttyATH0";
 static const char DEVNAME[] = "/dev/ttyS0";
 static uint8_t devbuf[DEVBUF_SIZE];
 static int devfd = 0;
@@ -44,9 +43,12 @@ void serial_onTime(void *arg)
 
     cout << "onTime" << endl;
 
+    //uint8_t cmd[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
 
-    uint8_t cmd[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
-    
+    Device* dev = new SONBEST_SD5110B(0x1);
+    //todo: if dev=NULL
+
+#if 0
     int count = sizeof(cmd);
     int writebytes = write(devfd, cmd, count);
     if(writebytes < count)
@@ -56,7 +58,10 @@ void serial_onTime(void *arg)
         cout << "write failed" << endl;
         return ;
     }
+#endif
 
+    dev->send_cmd(NULL, devfd);
+    //todo: if fail
 
 	memset(devbuf, 0, DEVBUF_SIZE);
 	while(true) {
@@ -110,6 +115,8 @@ void* serial_poll_run(void* arg)
 	selector = new Selector();
     //todo: check selector != NULL
 	selector->set_fd(devfd, READ);
+
+    cout << "timerlist size =" << tmlist->size() << endl;
 
     tmlist->start(); 
 	

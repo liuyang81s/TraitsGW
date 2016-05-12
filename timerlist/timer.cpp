@@ -33,7 +33,7 @@ bool Timer::set_time(const timeval& tv)
 	return true;
 }
 
-//时间格式：11:07:47
+//时间格式：2016-05-12 11:07:47
 bool Timer::set_time(const string& tv)
 {
     time_t cur_t;
@@ -44,15 +44,17 @@ bool Timer::set_time(const string& tv)
     cur_tm=localtime(&cur_t);
 
     memset(&dst_tm, 0, sizeof(dst_tm));
-	if(NULL == strptime(tv.c_str(), "%H:%M:%S", &dst_tm))
+	if(NULL == strptime(tv.c_str(), "%Y-%m-%d %H:%M:%S", &dst_tm))
 		return false;
     
+#if 0
 	dst_tm.tm_mday = cur_tm->tm_mday;
    	dst_tm.tm_mon = cur_tm->tm_mon;
     dst_tm.tm_year = cur_tm->tm_year;
     dst_tm.tm_wday = cur_tm->tm_wday;
     dst_tm.tm_yday = cur_tm->tm_yday;
     dst_tm.tm_isdst = cur_tm->tm_isdst;
+#endif
 
 	int interval = mktime(&dst_tm) - cur_t;
 	if(interval <= 0)
@@ -137,6 +139,41 @@ uint32_t WeeklyTimer::get_period() const
     }
 
 	return (i * SEC_PER_DAY); 
+}
+
+//todo: not finished
+//时间格式：11:07:47
+bool WeeklyTimer::set_time(const string& tv)
+{
+    time_t cur_t;
+    struct tm* cur_tm;
+    struct tm dst_tm;
+
+    time(&cur_t);
+    cur_tm=localtime(&cur_t);
+
+    memset(&dst_tm, 0, sizeof(dst_tm));
+	if(NULL == strptime(tv.c_str(), "%H:%M:%S", &dst_tm))
+		return false;
+    
+	dst_tm.tm_mday = cur_tm->tm_mday;
+   	dst_tm.tm_mon = cur_tm->tm_mon;
+    dst_tm.tm_year = cur_tm->tm_year;
+    dst_tm.tm_wday = cur_tm->tm_wday;
+    dst_tm.tm_yday = cur_tm->tm_yday;
+    dst_tm.tm_isdst = cur_tm->tm_isdst;
+
+    //todo: calculate interval
+
+	int interval = mktime(&dst_tm) - cur_t;
+	if(interval <= 0)
+		return false; 
+
+	_tv.tv_sec = interval;
+	_tv.tv_usec = 0;
+	_period = 0;
+
+	return true;
 }
 
 

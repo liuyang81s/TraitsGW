@@ -1,7 +1,7 @@
 #include <curl/curl.h>
 #include "httptool.h"
 
-#define POST_TIMEOUT 5
+#define POST_TIMEOUT 10
 
 HttpTool::HttpTool()
 {
