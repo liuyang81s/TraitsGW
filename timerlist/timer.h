@@ -3,6 +3,8 @@
 
 #include <sys/time.h>
 #include <stdint.h>
+//#include "../gw/traits.h"
+#include "traits.h"
 
 typedef void (*TIMERFUNC)(void *arg);
 
@@ -13,7 +15,7 @@ public:
 	virtual ~Timer();
 
 	bool set_time(const struct timeval& tv);
-	virtual bool set_time(const std::string& tv);
+	virtual TRAITScode set_time(const std::string& tv);
 	struct timeval get_time() const;
 	
 	virtual uint32_t get_period() const;
@@ -31,7 +33,7 @@ public:
 	WeeklyTimer(const uint8_t week_mask);
 	virtual ~WeeklyTimer();
 
-	bool set_time(const std::string& tv);
+	TRAITScode set_time(const std::string& tv);
 
 	uint32_t get_period() const;	
 	/*
