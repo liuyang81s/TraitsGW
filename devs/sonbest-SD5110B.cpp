@@ -45,6 +45,8 @@ bool SONBEST_SD5110B::send_cmd(uint8_t* cmd, int fd)
     if(0 >= fd)
         return false;
 
+    cout << "SONBEST_SD5110B send_cmd" << endl;
+
     //make 'read data' packet
     static uint8_t read_cmd[8];
     memset(read_cmd, 0, 8);     
@@ -74,6 +76,6 @@ bool SONBEST_SD5110B::send_cmd(uint8_t* cmd, int fd)
 int SONBEST_SD5110B::recognize_packet(uint8_t* buf)
 {
     //todo: more careful
-    return 8;
+    return 9;
 }
 

@@ -24,14 +24,14 @@ Timer::~Timer()
 {
 }
 
-bool Timer::set_time(const timeval& tv)
+TRAITScode Timer::set_time(const timeval& tv)
 {
 	if(tv.tv_sec < 0 || tv.tv_usec < 0)
-		return false;
+		return TRAITSE_TIME_FORMAT_ERROR;
 
 	_tv = tv;
 
-	return true;
+	return TRAITSE_OK;
 }
 
 //时间格式：2016-05-12 11:07:47

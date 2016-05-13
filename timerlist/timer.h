@@ -3,8 +3,7 @@
 
 #include <sys/time.h>
 #include <stdint.h>
-//#include "../gw/traits.h"
-#include "traits.h"
+#include "../gw/traits.h"
 
 typedef void (*TIMERFUNC)(void *arg);
 
@@ -14,7 +13,7 @@ public:
 	Timer();
 	virtual ~Timer();
 
-	bool set_time(const struct timeval& tv);
+	TRAITScode set_time(const struct timeval& tv);
 	virtual TRAITScode set_time(const std::string& tv);
 	struct timeval get_time() const;
 	

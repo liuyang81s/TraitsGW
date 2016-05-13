@@ -9,6 +9,9 @@
 #define TRAITS_DEBUG_SERIAL
 
 
+#define TRAITS_TEST
+
+
 #include "unlock_ringbuffer.h"
 
 extern UnlockRingBuffer *rbuffer;

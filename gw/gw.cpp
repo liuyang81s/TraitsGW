@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <stdio.h>
@@ -242,9 +243,17 @@ TRAITScode TraitsGW::heartbeat()
 
 static void hex2str(uint8_t* str, uint8_t* hex, int size)
 {
-	for(int i = 0; i < size; i++) {
-		sprintf((char*)str + i * 3, "%x ", hex[i]);
-	}	
+    int i = 0;
+	for(i = 0; i < size; i++) {
+        if(hex[i] <= 9)
+		    sprintf((char*)str + i * 3, "0%x ", hex[i]);
+        else
+    		sprintf((char*)str + i * 3, "%2x ", hex[i]);
+	}
+    str[i * 3 - 1] = 0;    
+#if 1
+    cout << "packet=" << str << endl;
+#endif
 } 
 
 
@@ -252,8 +261,8 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 {
     static string url = server_url + "data.do";
 
-#if 1    
-    cout << "report" << endl;
+#if 1
+    cout << "report size = " << size << endl;
 #endif
 
 	static uint8_t packet_str[PACKET_SIZE * 3 + 1];
@@ -262,12 +271,16 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 
 	static time_t cur_t;
 	time(&cur_t);
+    static char str_time[30];
+    memset(str_time, 0, 30);
+    //strftime(str_time, 20, "%Y-%m-%d %H:%M:%S", localtime(&cur_t));
+    strftime(str_time, 30, "%Y-%m-%dT%H:%M:%S.000+08:00", localtime(&cur_t));
 
 	json_object* data_object;
     data_object = json_object_new_object();
     json_object_object_add(data_object, "id", json_object_new_string(self_id.c_str()));
     json_object_object_add(data_object, "data", json_object_new_string((const char *)packet_str));
-    json_object_object_add(data_object, "time", json_object_new_string(ctime(&cur_t)));
+    json_object_object_add(data_object, "time", json_object_new_string(str_time));
     //todo:0 or 1
     json_object_object_add(data_object, "isAnalysis", json_object_new_int(1));
 
@@ -428,12 +441,12 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 	//parse 'planList'
     //tmlist->init() maybe not necessary
 	//tmlist->init();
-    
-	json_object_object_get_ex(full_obj, "planList", &temp_obj);
+
+#ifndef TRAITS_TEST
     json_object* timer_obj;
+	json_object_object_get_ex(full_obj, "planList", &temp_obj);
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         timer_obj = json_object_array_get_idx(temp_obj, i);
-		//string tv = json_object_to_json_string(timer_obj);
 		string tv = json_object_get_string(timer_obj);
 #ifdef TRAITS_DEBUG_GW
         cout << "timer = " << tv << endl;
@@ -447,21 +460,33 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 			ret = TRAITSE_MEM_ALLOC_FAILED;
             goto release_json_obj;
 		}
-		if(false == tm->set_time(tv)) {
-			//todo:log it
-			//or led indication
+		if(TRAITSE_OK != tm->set_time(tv)) {
+			//todo:log it or led indication
 			//plan time format error, but we just ignore it
 			//and move to next
-            cout << "set_time failed" ;
+            cout << "set_time failed" << endl;
 			continue;
 		}
 		tm->onTime = serial_onTime;
         cout << "add a timer" << endl;
 		tmlist->add_timer(tm);
     }
- 
+#else
+       Timer* test_tm;
+       test_tm = new Timer();
+       struct timeval newtv;
+       newtv.tv_sec = 5;
+       newtv.tv_usec = 0;
+       test_tm->set_time(newtv);
+       test_tm->set_period(10); 
+       test_tm->onTime = serial_onTime;
+       tmlist->add_timer(test_tm);
+#endif
+
 release_json_obj:    
+#ifndef TRAITS_TEST
     json_object_put(timer_obj);
+#endif
     json_object_put(temp_obj);
     json_object_put(full_obj);
 
@@ -502,7 +527,7 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
-        cout << "init response string is invalid" << endl;
+        cout << "data response string is invalid" << endl;
         //todo: log
         return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
@@ -517,7 +542,11 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
    
     json_object_put(full_obj);
     json_object_put(temp_obj);
-    
+   
+    if(0 != srv_ret_code){
+        ;//todo: LED error indication
+    }
+
     return TRAITSE_OK;
 }
 
@@ -526,7 +555,9 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
 {
     if(response.empty())
        return TRAITSE_RESPONSE_NONE; 
-  
+ 
+    TRAITScode ret = TRAITSE_OK;
+
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
@@ -550,34 +581,74 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     //parse 'isPlan'
     json_object_object_get_ex(full_obj, "isPlan", &temp_obj);
     int isplan = json_object_get_int(temp_obj);
-    if(0 == isplan)
+    if(0 == isplan) {
         plan_mode = PLAN_NONE;
+        tmlist->clean_timers();
+        return TRAITSE_OK;
+    }
     else if(1 == isplan)
         plan_mode = PLAN_UPDATE;
-    else if(2 == isplan)
+    else if(2 == isplan) {
         plan_mode = PLAN_REMAIN;
-    else 
+        return TRAITSE_OK;
+    }
+    else {
         plan_mode = PLAN_INVALID;
+        //todo: log, led indication
+        return TRAITSE_OK;
+    }
+
+    //when plan_mode = PLAN_UPDATE
+
+    //parse 'collectCycle'
+    json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
+    collect_cycle = json_object_get_int(temp_obj) & 0xff;
 
     //parse 'planList'
     json_object_object_get_ex(full_obj, "planList", &temp_obj);
     json_object* timer_obj;
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         timer_obj = json_object_array_get_idx(temp_obj, i);
-        cout << "timer = " << json_object_to_json_string(timer_obj);
-        //todo:add timer list
+        string tv = json_object_get_string(timer_obj);
+#ifdef TRAITS_DEBUG_GW
+        cout << "timer = " << tv << endl;
+#endif
+        Timer* tm = new WeeklyTimer(collect_cycle);
+        if(NULL == tm) {
+            cout << "Timer alloction failed" << endl;
+            //todo: log
+            tmlist->clean_timers();
+            ret = TRAITSE_MEM_ALLOC_FAILED;
+            goto release_json_obj;
+        }
+        if(TRAITSE_OK != tm->set_time(tv)) {
+            //todo:log 
+            cout << "set time failed" << endl;
+            continue;
+        }
+        tm->onTime = serial_onTime;
+        //todo: stop and clean the current timers
+        //todo: then add new timers
+        cout << "add a timer" << endl;
+        tmlist->add_timer(tm);
     }
-    json_object_put(timer_obj);
 
-    //parse 'collectCycle'
-    json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
-    collect_cycle = json_object_get_int(temp_obj) & 0xff;
-    
+release_json_obj:    
+    json_object_put(timer_obj);
     json_object_put(full_obj);
     json_object_put(temp_obj);
-
     
-    return TRAITSE_OK;
+    return ret;
+}
+
+void rbuffer_log(const char* prefix, uint8_t *buf, int size)        
+{
+    cout << prefix << ": ";                                                                                     
+    cout.fill('0');
+
+    for(int i = 0; i < size; i++)
+        cout << setw(2) << hex << (uint32_t)buf[i] << ' ';
+    cout << endl;
 }
 
 //网络数据转发线程
@@ -590,7 +661,7 @@ void* gw_run(void* arg)
 	Device* dev = new SONBEST_SD5110B(0x1);
 	if(NULL == dev) {
 		//todo: log
-		cout << "mem allocation failed" << endl;
+		cout << "mem alloc failed" << endl;
 		goto out;
 	}
 
@@ -609,6 +680,9 @@ void* gw_run(void* arg)
 				if(packet_len > 0) {
 					memset(packet_buf, 0, packet_len);
 					rbuffer->get(packet_buf, packet_len);
+#if 1
+                    rbuffer_log("rbuffer", packet_buf, packet_len);
+#endif
 					break;
 				}
 			}

@@ -105,6 +105,10 @@ void* serial_poll_run(void* arg)
 	
     TimerList* tmlist = (TimerList*)arg;
 
+#ifdef TRAITS_DEBUG_GW
+    list<Timer*>::iterator it;                                                                        
+#endif
+
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
         cout << "Open " << DEVNAME << " failed" << endl;
@@ -116,7 +120,16 @@ void* serial_poll_run(void* arg)
     //todo: check selector != NULL
 	selector->set_fd(devfd, READ);
 
-    cout << "timerlist size =" << tmlist->size() << endl;
+#ifdef TRAITS_DEBUG_GW
+    cout << "timerlist size = " << tmlist->size() << endl;
+    list<Timer*>* timers;
+    timers = tmlist->get_timers();
+    for(it = timers->begin(); it != timers->end(); ++it)
+    {
+        cout << "time tv_sec = " << (*it)->get_time().tv_sec << endl;
+    }
+
+#endif
 
     tmlist->start(); 
 	
