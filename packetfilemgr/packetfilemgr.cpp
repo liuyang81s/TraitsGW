@@ -62,11 +62,6 @@ TRAITScode PacketFileMgr::get_record(string& s)
 		memset(line_buf, 0, PACKET_LINE_SIZE);
 		pos_line_begin = _fs.tellp();
 		_fs.getline(line_buf, PACKET_LINE_SIZE);
-		
-#if 1
-		cout << "line_buf=" << line_buf<<endl;
-#endif
-
 		pos_line_end = _fs.tellp();
 		if(_fs.bad()) {
 			_fs.close();
@@ -208,9 +203,11 @@ TRAITScode PacketFileMgr::get_past_file(string& s)
 	}
 }
 
-TRAITScode PacketFileMgr::delete_file(const string& s)
+TRAITScode PacketFileMgr::delete_file(const string& file)
 {
-	if(!remove(s.c_str()))
+	string path = _dir + file;
+
+	if(!remove(path.c_str()))
 		return TRAITSE_OK;
 	else {
 		//todo: log

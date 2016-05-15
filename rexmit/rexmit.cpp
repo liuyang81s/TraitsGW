@@ -52,7 +52,6 @@ int main()
 #if 1
 				        	cout << "response empty" << endl;
 #endif
-	        				//todo:log
 					        sleep(5);
 				    	} else {
 #if 1
@@ -68,10 +67,14 @@ int main()
 				}
 			}
 		} else { //today file
-			
+			//todo:if today file exist
+			sleep(5);
+			cout << "today file processing" << endl;
 		}	
 	
 	}
+
+	cout << "rexmit over" << endl;
 
 	return 0;
 }
