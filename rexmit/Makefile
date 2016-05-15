@@ -5,8 +5,9 @@ INCLUDE_DIRS = $(ROOT)/http \
 				$(ROOT)/gw
 
 BUILD_DIR = $(BUILDS)/rexmit
-LINK_LIBS = curl 
+LINK_LIBS = http packetfilemgr \
+			curl 
 
-EXE = rexmit
+EXE = traitsrexmit
 
 include $(ROOT)/make.rule

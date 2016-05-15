@@ -9,8 +9,7 @@ DIRS = $(ROOT)/crc \
 	$(ROOT)/timerlist \
 	$(ROOT)/http \
 	$(ROOT)/packetfilemgr \
-	$(ROOT)/gw 
-#\
+	$(ROOT)/gw \
 	$(ROOT)/rexmit
 
 RM = rm

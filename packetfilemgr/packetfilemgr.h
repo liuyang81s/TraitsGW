@@ -25,13 +25,17 @@ public:
 
 	TRAITScode put_record(const string& s);
 	TRAITScode get_record(string& s);	
+	//mark 'R'->'S'
+	TRAITScode update_record();	
 	
 protected:
 	TRAITScode get_today_file();
 	TRAITScode get_file_list();
 
 	string _dir;
-	fstream _fs;		
+	fstream _fs;	
+	streampos pos_line_begin;
+	streampos pos_line_end;	
 	list<string> _filelist;
 	char line_buf[PACKET_LINE_SIZE];	
 };

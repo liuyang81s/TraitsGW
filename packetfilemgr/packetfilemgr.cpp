@@ -60,7 +60,14 @@ TRAITScode PacketFileMgr::get_record(string& s)
 
 	while(!_fs.eof()) {
 		memset(line_buf, 0, PACKET_LINE_SIZE);
+		pos_line_begin = _fs.tellp();
 		_fs.getline(line_buf, PACKET_LINE_SIZE);
+		
+#if 1
+		cout << "line_buf=" << line_buf<<endl;
+#endif
+
+		pos_line_end = _fs.tellp();
 		if(_fs.bad()) {
 			_fs.close();
 			return TRAITSE_FILE_READ_ERROR;
@@ -70,17 +77,29 @@ TRAITScode PacketFileMgr::get_record(string& s)
 		else if('R' == line_buf[0]) {
 			s.assign(line_buf + 2);
 			ALL_SENT = false;
+			break;
 		} else {
 			//todo: log invalid record
 			continue;
 		}
 	}
-	_fs.close();
 
-	if(ALL_SENT == true)
+	if(ALL_SENT == true) {
+		_fs.close();
 		return TRAITSE_ALL_RECORD_SENT;
+	}
 	else
 		return TRAITSE_OK;
+}
+
+TRAITScode PacketFileMgr::update_record()
+{
+	_fs.seekp(pos_line_begin);
+	_fs.put('S');	//R -> S
+	_fs.flush();
+	_fs.seekp(pos_line_end);
+
+	return TRAITSE_OK;
 }
 
 TRAITScode PacketFileMgr::get_today_file()
@@ -137,6 +156,7 @@ TRAITScode PacketFileMgr::get_file_list()
         closedir(dir);
     }   
 #if 1
+	cout << "file list: " << endl;
     for(list<string>::iterator it = _filelist.begin(); it != _filelist.end(); it++)
     {   
         cout<<(*it)<<endl;
@@ -177,7 +197,8 @@ TRAITScode PacketFileMgr::get_past_file(string& s)
 		if(_fs.is_open())
 			_fs.close();	
 
-		_fs.open(s.c_str(), ios::in | ios::binary);  	
+		string filepath = _dir + s;
+		_fs.open(filepath.c_str(), ios::in | ios::out | ios::binary);  	
 		if(_fs.is_open()) 
 			return TRAITSE_OK;
 		else {

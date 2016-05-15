@@ -37,9 +37,9 @@ typedef enum {
 #define HB_URL	"refresh.do"
 
 #if 0
-#define FILEBUF_ADDR	"/mnt/sda1/filebuf/" 
+#define FILEBUF_PATH	"/mnt/sda1/filebuf/" 
 #else
-#define FILEBUF_ADDR	"/home/ayang/test/filebuf/"
+#define FILEBUF_PATH	"/home/ayang/test/filebuf/"
 #endif
 
 #endif
