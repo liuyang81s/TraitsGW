@@ -125,8 +125,6 @@ string TraitsGW::get_self_id()
 
 TRAITScode TraitsGW::request_init()
 {
-	static string init_url = "init.do";
-
 #ifndef TRAITS_DEBUG
 	//read config file, get gage info 
 	ifstream config_file(CONFIG_PATH);
@@ -187,7 +185,7 @@ TRAITScode TraitsGW::request_init()
 #endif
     json_object_put(init_object);
 
-    string  strUrl = server_url + init_url;
+    string  strUrl = server_url + INIT_URL;
     string  strResponse;
     HttpTool htool;
     htool.Post(strUrl, strPost, strResponse);
@@ -208,8 +206,6 @@ TRAITScode TraitsGW::request_init()
 
 TRAITScode TraitsGW::heartbeat()
 {
-	static string hb_url = "refresh.do";
-
 	json_object* hb_object;
     hb_object = json_object_new_object();
     json_object_object_add(hb_object, "id", json_object_new_string(self_id.c_str()));
@@ -219,7 +215,7 @@ TRAITScode TraitsGW::heartbeat()
 	cout << strPost << endl;
 #endif
 
-    string  strUrl = server_url + hb_url;
+    string  strUrl = server_url + HB_URL;
         string  strResponse;
         HttpTool hdd;
         hdd.Post(strUrl, strPost, strResponse);
@@ -259,7 +255,7 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 
 TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 {
-    static string url = server_url + "data.do";
+    static string url = server_url + DATA_URL;
 
 #if 1
     cout << "report size = " << size << endl;

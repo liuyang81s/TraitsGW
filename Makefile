@@ -7,7 +7,11 @@ DIRS = $(ROOT)/crc \
 	$(ROOT)/ringbuffer \
 	$(ROOT)/devs \
 	$(ROOT)/timerlist \
+	$(ROOT)/http \
+	$(ROOT)/packetfilemgr \
 	$(ROOT)/gw 
+#\
+	$(ROOT)/rexmit
 
 RM = rm
 RMFLAGS = -fr

@@ -6,11 +6,11 @@
 #include "serial.h"
 #include "timer.h"
 #include "timerlist.h"
+#include "traits.h"
 #include "main.h"
 
 using namespace std;
 
-#define SERVER_URL "http://traits.imwork.net:10498/AnalyzeServer/system/"
 #define RINGBUFFER_SIZE 2048
 
 UnlockRingBuffer *rbuffer = NULL;
