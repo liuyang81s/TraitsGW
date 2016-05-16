@@ -29,7 +29,9 @@ public:
 	TRAITScode update_record();	
 	
 protected:
-	TRAITScode get_today_file();
+	TRAITScode get_today_file_to_put();
+	TRAITScode get_today_file_to_get();
+	string get_today_name();
 	TRAITScode get_file_list();
 
 	string _dir;

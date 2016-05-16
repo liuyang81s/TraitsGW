@@ -97,33 +97,51 @@ TRAITScode PacketFileMgr::update_record()
 	return TRAITSE_OK;
 }
 
-TRAITScode PacketFileMgr::get_today_file()
+string PacketFileMgr::get_today_name()
 {
 	time_t cur_t;
 	time(&cur_t);
 	
-	char day[16];
-	memset(day, 0, 16);
+	char today[16];
+	memset(today, 0, 16);
 
-	strftime(day, 16, "%Y-%m-%d", localtime(&cur_t));
+	strftime(today, 16, "%Y-%m-%d", localtime(&cur_t));
+	
+	return string(today); 
+}
 
-	string filename = _dir + day; 
+TRAITScode PacketFileMgr::get_today_file_to_get()
+{
+	string filepath = _dir + get_today_name(); 
 #if 1
-		cout << "filename = " << filename << endl;
+	cout << "today filepath = " << filepath << endl;
 #endif
 
-	_fs.open(filename.c_str(), ios::in | ios::app | ios::binary);  	
+	_fs.open(filepath.c_str(), ios::in | ios::out | ios::binary);  	
 
     if (_fs.is_open())
 		return TRAITSE_OK;
     else{
-		_fs.open(filename.c_str(), ios::in | ios::out | ios::binary);  	
-		if(_fs.is_open()) 
-			return TRAITSE_OK;
-		else {
-			;//todo: log, and error indication
-			return TRAITSE_FILE_CREATE_FAILED;
-		}
+		//todo: log, and error indication
+		return TRAITSE_FILE_CREATE_FAILED;
+	}
+	return TRAITSE_OK;
+}
+
+TRAITScode PacketFileMgr::get_today_file_to_put()
+{
+	string filepath = _dir + get_today_name(); 
+#if 1
+	cout << "today filepath = " << filepath << endl;
+#endif
+
+	_fs.open(filepath.c_str(), ios::app | ios::binary);  	
+
+    if (_fs.is_open())
+		return TRAITSE_OK;
+    else{
+		//todo: log, and error indication
+		return TRAITSE_FILE_OPEN_FAILED;
 	}
 }
 
@@ -166,13 +184,7 @@ TRAITScode PacketFileMgr::get_past_file(string& s)
 	if(TRAITSE_OK != ret)
 		return ret;
 	else {
-		time_t cur_t;
-		time(&cur_t);
-	
-		char today[16];
-		memset(today, 0, 16);
-		strftime(today, 16, "%Y-%m-%d", localtime(&cur_t));
-
+		string today = get_today_name();
 		s.clear();
     	for(list<string>::iterator it = _filelist.begin(); it != _filelist.end(); it++)
 	    {   
@@ -206,6 +218,9 @@ TRAITScode PacketFileMgr::get_past_file(string& s)
 TRAITScode PacketFileMgr::delete_file(const string& file)
 {
 	string path = _dir + file;
+
+	if(_fs.is_open())
+		_fs.close();	
 
 	if(!remove(path.c_str()))
 		return TRAITSE_OK;

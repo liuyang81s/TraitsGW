@@ -10,16 +10,14 @@ using namespace std;
 
 int main()
 {
-	PacketFileMgr pfmgr;
-	string filename;
-    HttpTool htool;
-	string data_url(SERVER_URL);
-#if 0
-	data_url.append(DATA_URL);
-#else
-	data_url.append(INIT_URL);
-#endif
 	TRAITScode ret = TRAITSE_LAST;
+	
+	PacketFileMgr pfmgr;
+    HttpTool htool;
+	
+	string filename;
+	string data_url(SERVER_URL);
+	data_url.append(DATA_URL);
 	
 	ret = pfmgr.set_dir(FILEBUF_PATH);		
 	if(TRAITSE_OK != ret) {
