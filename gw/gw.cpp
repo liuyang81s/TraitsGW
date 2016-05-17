@@ -270,7 +270,6 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
     static char str_time[30];
     memset(str_time, 0, 30);
     strftime(str_time, 20, "%Y-%m-%d %H:%M:%S", localtime(&cur_t));
-    //strftime(str_time, 30, "%Y-%m-%dT%H:%M:%S.000+08:00", localtime(&cur_t));
 
 	json_object* data_object;
     data_object = json_object_new_object();
@@ -434,10 +433,6 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
     collect_cycle = json_object_get_int(temp_obj) & 0xff;
     
-	//parse 'planList'
-    //tmlist->init() maybe not necessary
-	//tmlist->init();
-
 #ifndef TRAITS_TEST
     json_object* timer_obj;
 	json_object_object_get_ex(full_obj, "planList", &temp_obj);

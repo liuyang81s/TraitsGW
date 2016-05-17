@@ -16,8 +16,8 @@ ifeq ("$(HOST)", "y")
 CROSS_COMPILE = 
 endif
 
-CC = $(CROSS_COMPILE)gcc -g
-CPP = $(CROSS_COMPILE)g++ -g
+CC = $(CROSS_COMPILE)gcc 
+CPP = $(CROSS_COMPILE)g++ 
 CFLAGS = -Wall
 AR = $(CROSS_COMPILE)ar
 ARFLAGS = crs
