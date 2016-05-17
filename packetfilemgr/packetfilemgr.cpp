@@ -73,9 +73,11 @@ TRAITScode PacketFileMgr::put_today_record(const string& s)
 	}
 
 	fclose(_fp);
+	_fp = NULL;
 
 	return TRAITSE_OK;
 }
+
 
 TRAITScode PacketFileMgr::get_today_record(string& s)
 {
@@ -86,20 +88,26 @@ TRAITScode PacketFileMgr::get_today_record(string& s)
 	int fd = fileno(_fp);
 	if(-1 == lockf(fd, F_LOCK, 0)) {
 		fclose(_fp);
+		_fp = NULL;
 		//todo:log
 		cout << "file lock failed before read" << endl;
 		return TRAITSE_FILE_LOCK_FAILED;
 	}
-	
+
+	s.clear();	
 	while(!feof(_fp)) {
 		memset(line_buf, 0, PACKET_LINE_SIZE);
 		fgetpos(_fp, &pos_line_begin_todayfile);
-		int len = PACKET_LINE_SIZE;
-		char* temp = NULL;
 		if(NULL == fgets(line_buf, PACKET_LINE_SIZE, _fp)) {
+			if(feof(_fp))
+				ret = TRAITSE_OK;
+			else
+				ret = TRAITSE_FILE_READ_ERROR;
 			fclose(_fp);
-			return TRAITSE_FILE_READ_ERROR;
+			_fp = NULL;
+			return ret;
 		}
+
 		fgetpos(_fp, &pos_line_end_todayfile);
 		if('S' == line_buf[0])
 			continue;
@@ -113,6 +121,7 @@ TRAITScode PacketFileMgr::get_today_record(string& s)
 	}
 	
 	fclose(_fp);
+	_fp = NULL;
 
 	return TRAITSE_OK;
 }
@@ -121,6 +130,7 @@ TRAITScode PacketFileMgr::get_record(string& s)
 {
 	bool ALL_SENT = true;
 
+	s.clear();
 	while(!_fs.eof()) {
 		memset(line_buf, 0, PACKET_LINE_SIZE);
 		pos_line_begin = _fs.tellp();
@@ -169,6 +179,7 @@ TRAITScode PacketFileMgr::update_record_today()
 	int fd = fileno(_fp);
 	if(-1 == lockf(fd, F_LOCK, 0)) {
 		fclose(_fp);
+		_fp = NULL;
 		//todo:log
 		cout << "file lock failed before read" << endl;
 		return TRAITSE_FILE_LOCK_FAILED;
@@ -180,6 +191,7 @@ TRAITScode PacketFileMgr::update_record_today()
 	fsetpos(_fp, &pos_line_end_todayfile);
 
 	fclose(_fp);
+	_fp = NULL;
 
 	return TRAITSE_OK;
 }
@@ -200,19 +212,7 @@ string PacketFileMgr::get_today_name()
 TRAITScode PacketFileMgr::get_today_file_to_get()
 {
 	string filepath = _dir + get_today_name(); 
-#if 1
-	cout << "today filepath = " << filepath << endl;
-#endif
-#if 0
-	_fs.open(filepath.c_str(), ios::in | ios::out | ios::binary);  	
 
-    if (_fs.is_open())
-		return TRAITSE_OK;
-    else{
-		//todo: log, and error indication
-		return TRAITSE_FILE_CREATE_FAILED;
-	}
-#endif
 	_fp = fopen(filepath.c_str(), "r+");
 	if(NULL == _fp) {
 		//todo: log
@@ -225,19 +225,7 @@ TRAITScode PacketFileMgr::get_today_file_to_get()
 TRAITScode PacketFileMgr::get_today_file_to_put()
 {
 	string filepath = _dir + get_today_name(); 
-#if 1
-	cout << "today filepath = " << filepath << endl;
-#endif
-#if 0
-	_fs.open(filepath.c_str(), ios::app | ios::binary);  	
-
-    if (_fs.is_open())
-		return TRAITSE_OK;
-    else{
-		//todo: log, and error indication
-		return TRAITSE_FILE_OPEN_FAILED;
-	}
-#endif
+	
 	_fp = fopen(filepath.c_str(), "a+");
 	if(NULL == _fp) {
 		//todo: log
@@ -280,7 +268,6 @@ TRAITScode PacketFileMgr::get_file_list()
 	return TRAITSE_OK;
 }
 
-//TRAITScode PacketFileMgr::get_past_file(string& s) 
 TRAITScode PacketFileMgr::get_file(string& s, TRAITS_PF_TIME_TYPE* pft_type)
 {
 	TRAITScode ret = get_file_list();

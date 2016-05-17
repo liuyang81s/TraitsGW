@@ -37,7 +37,6 @@ int main()
 			sleep(5);
 			cout << "there is no packet file to process" << endl;
 		} else if(TRAITS_PF_PAST == pft_type) {
-		//if(!filename.empty()) { //past file
 			while(true) {
 				string strPost;
 				ret = pfmgr.get_record(strPost);
@@ -48,6 +47,9 @@ int main()
 					pfmgr.delete_file(filename);
 					break;
 				} else if (TRAITSE_OK == ret) {
+					if(strPost.empty())
+						break;
+
 					string  strResponse;
 					while(true) { //持续发送，直到成功
 					    htool.Post(data_url, strPost, strResponse);
@@ -66,6 +68,7 @@ int main()
 					}	
 				} else { //get_record() failed
 					//todo:log 
+					cout << "read past file failed" <<endl;
 					break;
 				}
 			}//while
@@ -74,6 +77,11 @@ int main()
 			string strPost;
 			ret = pfmgr.get_today_record(strPost);
 			if(TRAITSE_OK == ret) {
+				if(strPost.empty()) {//读取正常而返回空说明到文件尾
+					sleep(5);		 //等待一段时间后再次检查是否有未发送的报文
+					continue;
+				}
+				
 				string  strResponse;
 				while(true) { //持续发送，直到成功
 					htool.Post(data_url, strPost, strResponse);
@@ -92,6 +100,7 @@ int main()
 				}//while	
 			} else { //get_record() failed
 				//todo: log
+				cout << "read today file failed" << endl;
 				break;
 			}
 		}	
