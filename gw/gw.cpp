@@ -669,7 +669,7 @@ void* gw_run(void* arg)
 		pthread_mutex_lock(&rb_mutex);
 		while(true) {
 			if(rbuffer->size() > 0) {
-				packet_len = dev->recognize_packet(rbuffer->get_data()); 				
+				packet_len = dev->recognize_packet(rbuffer->get_data(), rbuffer->size()); 				
 
 				//找到合法报文时，取出，继续检测
 				//否则，阻塞，等待被唤醒

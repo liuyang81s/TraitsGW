@@ -8,6 +8,8 @@
 
 using namespace std;
 
+const int SONBEST_SD5110B::DATA_PACKET_SIZE = 9;
+
 SONBEST_SD5110B::SONBEST_SD5110B()
 {
     _addr = 0x1;
@@ -73,9 +75,23 @@ bool SONBEST_SD5110B::send_cmd(uint8_t* cmd, int fd)
     return true;
 }
 
-int SONBEST_SD5110B::recognize_packet(uint8_t* buf)
+int SONBEST_SD5110B::recognize_packet(uint8_t* buf, int size)
 {
-    //todo: more careful
+#if 1
+	cout << "sd5110b size = " << size<< endl;
+#endif
+
+	if(size < SONBEST_SD5110B::DATA_PACKET_SIZE)
+		return 0;
+
+   	for(int i = 0; i < size; i++) {
+		if(buf[i] < 249 && buf[i] > 0
+			&& buf[i+1] == 0x3 
+			&& buf[i+2] == 0x4
+			&& ((size - i) >= SONBEST_SD5110B::DATA_PACKET_SIZE))
+			return SONBEST_SD5110B::DATA_PACKET_SIZE;
+	} 
+
     return 9;
 }
 

@@ -24,9 +24,9 @@ private:
   
 private:
      uint8_t *m_pBuffer;    /* the buffer holding the data */
-     uint32_t   m_nSize;        /* the size of the allocated buffer */
-     uint32_t   m_nIn;        /* data is added at offset (in % size) */
-     uint32_t   m_nOut;        /* data is extracted from off. (out % size) */
+     uint32_t   m_nSize;    /* the size of the allocated buffer */
+     uint32_t   m_nIn;      /* data is added at offset (in % size) */
+     uint32_t   m_nOut;     /* data is extracted from off. (out % size) */
 };
   
 #endif

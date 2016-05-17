@@ -15,7 +15,9 @@ public:
     void set_addr(const uint8_t addr);
 
     bool send_cmd(uint8_t* cmd, int fd);
-    int recognize_packet(uint8_t* buf);
+    int recognize_packet(uint8_t* buf, int size);
+
+	const static int DATA_PACKET_SIZE;
 
 protected:
     uint8_t _addr;
