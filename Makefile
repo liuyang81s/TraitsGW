@@ -9,6 +9,7 @@ DIRS = $(ROOT)/crc \
 	$(ROOT)/timerlist \
 	$(ROOT)/http \
 	$(ROOT)/packetfilemgr \
+	$(ROOT)/easylogger \
 	$(ROOT)/gw \
 	$(ROOT)/rexmit
 
