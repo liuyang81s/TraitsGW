@@ -269,8 +269,8 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 	time(&cur_t);
     static char str_time[30];
     memset(str_time, 0, 30);
-    //strftime(str_time, 20, "%Y-%m-%d %H:%M:%S", localtime(&cur_t));
-    strftime(str_time, 30, "%Y-%m-%dT%H:%M:%S.000+08:00", localtime(&cur_t));
+    strftime(str_time, 20, "%Y-%m-%d %H:%M:%S", localtime(&cur_t));
+    //strftime(str_time, 30, "%Y-%m-%dT%H:%M:%S.000+08:00", localtime(&cur_t));
 
 	json_object* data_object;
     data_object = json_object_new_object();

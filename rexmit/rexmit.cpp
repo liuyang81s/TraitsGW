@@ -26,13 +26,18 @@ int main()
 	}
 
 	while(true) {
-		ret = pfmgr.get_past_file(filename);
+		TRAITS_PF_TIME_TYPE pft_type = TRAITS_PF_INVALID;
+		ret = pfmgr.get_file(filename, &pft_type);
 		if(TRAITSE_OK != ret) {
 			cout << "get past file failed" << endl;
 			break;//todo: log, led indication
 		}
-	
-		if(!filename.empty()) { //past file
+
+		if(TRAITS_PF_NONE == pft_type) {
+			sleep(5);
+			cout << "there is no packet file to process" << endl;
+		} else if(TRAITS_PF_PAST == pft_type) {
+		//if(!filename.empty()) { //past file
 			while(true) {
 				string strPost;
 				ret = pfmgr.get_record(strPost);
@@ -50,7 +55,7 @@ int main()
 #if 1
 				        	cout << "response empty" << endl;
 #endif
-					        sleep(5);
+					        sleep(2);
 				    	} else {
 #if 1
 							cout << "stresponse ok" <<endl;
@@ -59,18 +64,38 @@ int main()
 							break;
 						}
 					}	
-				} else {
-					//todo:log
+				} else { //get_record() failed
+					//todo:log 
 					break;
 				}
-			}
-		} else { //today file
-			//todo:if today file exist
-			sleep(5);
+			}//while
+		} else if(TRAITS_PF_TODAY == pft_type){ //today file
 			cout << "today file processing" << endl;
+			string strPost;
+			ret = pfmgr.get_today_record(strPost);
+			if(TRAITSE_OK == ret) {
+				string  strResponse;
+				while(true) { //持续发送，直到成功
+					htool.Post(data_url, strPost, strResponse);
+    				if(strResponse.empty()){
+#if 1
+			    	cout << "response empty" << endl;
+#endif
+			       		sleep(2);
+				   	} else {
+#if 1
+						cout << "stresponse ok" <<endl;
+#endif
+						pfmgr.update_record_today();
+						break;
+					}
+				}//while	
+			} else { //get_record() failed
+				//todo: log
+				break;
+			}
 		}	
-	
-	}
+	}//while
 
 	cout << "rexmit over" << endl;
 
