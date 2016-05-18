@@ -39,12 +39,12 @@ static char log_buf[ELOG_BUF_SIZE] = { 0 };
 static const char *log_tag = "elog";
 /* level output info */
 static const char *level_output_info[] = {
-        "A/",
-        "E/",
-        "W/",
-        "I/",
-        "D/",
-        "V/",
+        "Assert /",
+        "Error  /",
+        "Warn   /",
+        "Info   /",
+        "Debug  /",
+        "Verbose/",
 };
 /* the output lock enable or disable. default is enable */
 static bool output_lock_enabled = true;

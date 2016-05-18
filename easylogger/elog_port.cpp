@@ -31,6 +31,15 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>       
+#include <sys/types.h>
+
+#define LOG_PATH "/home/ayang/test/logs/"
+//#define LOG_PATH "/mnt/sdb1/logs/"
+
+//#define APP_DEBUG
 
 static pthread_mutex_t output_lock;
 static FILE* fp;
@@ -45,12 +54,37 @@ ElogErrCode elog_port_init(void) {
 
     pthread_mutex_init(&output_lock, NULL);
 
-	//todo: filname by day
-    fp = fopen("log", "w+");
+#ifndef APP_DEBUG
+    if(0 != mkdir(LOG_PATH, 0755)) {
+        if(EEXIST != errno) {
+			perror(strerror(errno));
+            return ELOG_DIR_CREATE_ERROR;
+		}
+    } 
+
+	time_t cur_t;
+	time(&cur_t);
+
+	char cur[16];
+    memset(cur, 0, 16);
+
+	strftime(cur, 16, "%Y%m%d%H%M%S", localtime(&cur_t));
+
+	char filepath[64];
+	memset(filepath, 0, 64);
+
+	int i = strlen(LOG_PATH);
+	strncpy(filepath, LOG_PATH, i);
+	strncpy(filepath + i, cur, strlen(cur));
+	i += strlen(cur);
+	strncpy(filepath + i, ".log", strlen(".log"));
+	
+    fp = fopen(filepath, "w+");
     if(NULL == fp) {
-        printf("log file open failed\n");
+		perror(strerror(errno));
         result = ELOG_FILE_OPEN_ERROR;    
     }   
+#endif
     
     return result;
 }
@@ -60,7 +94,9 @@ ElogErrCode elog_port_close(void) {
 
     pthread_mutex_destroy(&output_lock);
 
+#ifndef APP_DEBUG
     fclose(fp);
+#endif
 
     return result;
 }
@@ -73,9 +109,12 @@ ElogErrCode elog_port_close(void) {
  */
 //todo:output to file or stdout
 void elog_port_output(const char *log, size_t size) {
-    //fprintf(stdout, "%.*s", (int)size, log);
+#ifdef APP_DEBUG
+    fprintf(stdout, "%.*s", (int)size, log);
+#else
     fprintf(fp, "%.*s", (int)size, log);
     fflush(fp);
+#endif
 }
 
 /**

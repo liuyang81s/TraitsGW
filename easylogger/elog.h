@@ -126,6 +126,7 @@ typedef struct {
 typedef enum {
     ELOG_NO_ERR = 0,
 	ELOG_FILE_OPEN_ERROR,
+	ELOG_DIR_CREATE_ERROR,
 } ElogErrCode;
 
 /* elog.c */
