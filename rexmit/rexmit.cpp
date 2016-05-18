@@ -5,11 +5,19 @@
 #include "traits.h"
 #include "httptool.h"
 #include "packetfilemgr.h"
+#include "traits_elog.h"
 
 using namespace std;
 
 int main()
 {
+    if(ELOG_NO_ERR != init_elog()) {    
+        cout << "elog init failed" << endl;                                                                           
+        return 0;
+    }
+        
+    log_i("ReXmit starting...");
+
 	TRAITScode ret = TRAITSE_LAST;
 	
 	PacketFileMgr pfmgr;
@@ -29,8 +37,8 @@ int main()
 		TRAITS_PF_TIME_TYPE pft_type = TRAITS_PF_INVALID;
 		ret = pfmgr.get_file(filename, &pft_type);
 		if(TRAITSE_OK != ret) {
-			cout << "get past file failed" << endl;
-			break;//todo: log, led indication
+			log_e("get past file failed");
+			break;//todo: led indication
 		}
 
 		if(TRAITS_PF_NONE == pft_type) {
@@ -67,8 +75,7 @@ int main()
 						}
 					}	
 				} else { //get_record() failed
-					//todo:log 
-					cout << "read past file failed" <<endl;
+					log_e("read past file failed");
 					break;
 				}
 			}//while
@@ -99,14 +106,13 @@ int main()
 					}
 				}//while	
 			} else { //get_record() failed
-				//todo: log
-				cout << "read today file failed" << endl;
+				log_e("read today file failed");
 				break;
 			}
 		}	
 	}//while
 
-	cout << "rexmit over" << endl;
+    log_i("ReXmit starting...");
 
 	return 0;
 }

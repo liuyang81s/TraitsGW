@@ -12,6 +12,7 @@
 #include <errno.h>
 
 #include "packetfilemgr.h"
+#include "traits_elog.h"
 #include "traits.h"
 
 
@@ -43,8 +44,10 @@ TRAITScode PacketFileMgr::set_dir(const char* dir)
 	else {
 		if(EEXIST == errno)
 			return TRAITSE_OK;
-		else
+		else{
+            log_e("'%s' dir create failed, %s", dir, strerror(errno));
 			return TRAITSE_DIR_CREATE_FAILED; 	
+        }
 	}
 }
 
@@ -61,14 +64,12 @@ TRAITScode PacketFileMgr::put_today_record(const string& s)
 	
 	int fd = fileno(_fp);
 	if(-1 == lockf(fd, F_LOCK, 0)) {
-		//todo:log
-		cout << "file lock failed before write" << endl;
+		log_e("file lock failed before write, %s", strerror(errno));
 		return TRAITSE_FILE_LOCK_FAILED;
 	}
 	
 	if(-1 == write(fd, s.c_str(), s.size())) {
-		//todo:log
-		cout << "file write failed" << endl;
+		log_e("file write failed, %s", strerror(errno));
 		return TRAITSE_FILE_WRITE_ERROR;
 	}
 
@@ -89,8 +90,7 @@ TRAITScode PacketFileMgr::get_today_record(string& s)
 	if(-1 == lockf(fd, F_LOCK, 0)) {
 		fclose(_fp);
 		_fp = NULL;
-		//todo:log
-		cout << "file lock failed before read" << endl;
+		log_e("file lock failed before read, %s", strerror(errno));
 		return TRAITSE_FILE_LOCK_FAILED;
 	}
 
@@ -115,7 +115,7 @@ TRAITScode PacketFileMgr::get_today_record(string& s)
 			s.assign(line_buf + 2);
 			break;
 		} else {
-			//todo: log invalid record
+			log_w("invalid packet record");
 			continue;
 		}
 	}
@@ -147,7 +147,7 @@ TRAITScode PacketFileMgr::get_record(string& s)
 			ALL_SENT = false;
 			break;
 		} else {
-			//todo: log invalid record
+			log_w("invalid packet record");
 			continue;
 		}
 	}
@@ -180,8 +180,7 @@ TRAITScode PacketFileMgr::update_record_today()
 	if(-1 == lockf(fd, F_LOCK, 0)) {
 		fclose(_fp);
 		_fp = NULL;
-		//todo:log
-		cout << "file lock failed before read" << endl;
+		log_e("file lock failed before read, %s", strerror(errno));
 		return TRAITSE_FILE_LOCK_FAILED;
 	}
 	
@@ -215,8 +214,7 @@ TRAITScode PacketFileMgr::get_today_file_to_get()
 
 	_fp = fopen(filepath.c_str(), "r+");
 	if(NULL == _fp) {
-		//todo: log
-		cout << "today file open failed" << endl;
+		log_e("'%s' file open failed, %s", filepath.c_str(), strerror(errno));
 		return TRAITSE_FILE_OPEN_FAILED;
 	} else
 		return TRAITSE_OK;
@@ -228,8 +226,7 @@ TRAITScode PacketFileMgr::get_today_file_to_put()
 	
 	_fp = fopen(filepath.c_str(), "a+");
 	if(NULL == _fp) {
-		//todo: log
-		cout << "today file open failed" << endl;
+		log_e("'%s' file open failed, %s", filepath.c_str(), strerror(errno));
 		return TRAITSE_FILE_OPEN_FAILED;
 	} else
 		return TRAITSE_OK;
@@ -245,7 +242,7 @@ TRAITScode PacketFileMgr::get_file_list()
 	_filelist.clear();
 
     if ((dir = opendir(_dir.c_str())) == NULL) { //打开目录
-		//todo: log
+		log_e("'%s' dir open failed, %s", _dir.c_str(), strerror(errno));
 		return TRAITSE_DIR_OPEN_FAILED;
 	} else {
     	int ret;
@@ -309,7 +306,8 @@ TRAITScode PacketFileMgr::get_file(string& s, TRAITS_PF_TIME_TYPE* pft_type)
 			if(_fs.is_open()) 
 				return TRAITSE_OK;
 			else {
-				;//todo: log, and error indication
+				//todo: led error indication
+		        log_e("'%s' file open failed, %s", filepath.c_str(), strerror(errno));
 				return TRAITSE_FILE_OPEN_FAILED;
 			}
 		}
@@ -326,7 +324,7 @@ TRAITScode PacketFileMgr::delete_file(const string& file)
 	if(!remove(path.c_str()))
 		return TRAITSE_OK;
 	else {
-		//todo: log
+		log_e("'%s' file delete failed, %s", path.c_str(), strerror(errno));
 		return TRAITSE_FILE_DELETE_FAILED;
 	}
 }

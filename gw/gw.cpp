@@ -421,7 +421,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
         timer_obj = json_object_array_get_idx(temp_obj, i);
 		string tv = json_object_get_string(timer_obj);
 #ifdef TRAITS_DEBUG_GW
-        cout << "timer = " << tv << endl;
+        log_i("timer = %s", tv.c_str());
 #endif
 		//make new timer, add to timerlist
 		Timer* tm = new WeeklyTimer(collect_cycle);
@@ -439,7 +439,6 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 			continue;
 		}
 		tm->onTime = serial_onTime;
-        cout << "add a timer" << endl;
 		tmlist->add_timer(tm);
     }
 #else

@@ -47,7 +47,7 @@ void Selector::set_fd(int fd, FD_TYPE type)
     }
 
     if(fd >= maxfd)
-            maxfd = fd + 1;    
+        maxfd = fd + 1;    
 }
 
 int Selector::fd_isset(int fd, FD_TYPE type)

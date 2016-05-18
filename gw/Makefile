@@ -9,7 +9,7 @@ INCLUDE_DIRS = $(ROOT)/ringbuffer \
 
 
 BUILD_DIR = $(BUILDS)/gw
-LINK_LIBS = ringbuffer devs crc tmlist http elog \
+LINK_LIBS = ringbuffer devs crc tmlist http packetfilemgr elog \
             json-c curl event pthread
 
 

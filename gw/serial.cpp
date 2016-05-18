@@ -4,12 +4,14 @@
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "selector.h"
 #include "serial.h"
 #include "main.h"
 #include "devs.h"
 #include "timerlist.h"
+#include "traits_elog.h"
 
 
 #define DEVBUF_SIZE 128
@@ -56,11 +58,10 @@ void serial_onTime(void *arg)
 		int r = selector->select(&read_timeout);
         if(-1 == r)
         {
-			cout << "select error" << endl;
-		    //todo:log
+			log_e("select error: %s", strerror(errno));
             return;
 		} else if (0 == r) {    //time out
-            cout << "read timeout" << endl;
+            log_w("select read timeout");
             return;
         }
 	
@@ -89,23 +90,25 @@ void serial_onTime(void *arg)
 
 void* serial_poll_run(void* arg)
 {
-	cout << "serial poll thread running" << endl;	
-	
-    TimerList* tmlist = (TimerList*)arg;
-
+	log_i("serial poll thread running...");	
+    
 #ifdef TRAITS_DEBUG_GW
     list<Timer*>::iterator it;                                                                        
 #endif
+    TimerList* tmlist = (TimerList*)arg;
 
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
-        cout << "Open " << DEVNAME << " failed" << endl;
-		//todo: log
+        log_e("%s: Open failed", DEVNAME);
         goto out;
     } 
 
 	selector = new Selector();
-    //todo: check selector != NULL
+    if(NULL == selector) {
+        close(devfd);
+        log_e("selector mem alloc failed");
+        goto out;
+    }
 	selector->set_fd(devfd, READ);
 
 #ifdef TRAITS_DEBUG_GW
@@ -116,16 +119,13 @@ void* serial_poll_run(void* arg)
     {
         cout << "time tv_sec = " << (*it)->get_time().tv_sec << endl;
     }
-
 #endif
 
     tmlist->start(); 
 	
-out:
     close(devfd);
-
-	cout << "serial thread exit" << endl;
-	//todo: log	
+out:
+	log_i("serial poll thread exit...");
 
 	return 0;
 }
@@ -133,36 +133,40 @@ out:
 
 void* serial_listen_run(void* arg)
 {
-	cout << "serial listen thread running" << endl;	
-	
-	Selector selector;
+	log_i("serial listen thread running...");	
 
-	int devfd = open(DEVNAME, O_RDWR);
-    if ( devfd == -1 ) { 
-        cout << "Open " << DEVNAME << "failed" << endl;
-		//todo: log
-        goto out;
+	devfd = open(DEVNAME, O_RDWR);
+    if ( devfd == -1 ) {
+       log_e("%s: Open failed", DEVNAME); 
+       goto out;
     } 
 
-	selector.set_fd(devfd, READ);
+    selector = new Selector();
+    if(NULL == selector) {                   
+        close(devfd);       
+        log_e("selector mem alloc failed");
+        goto out;
+    }   
+    selector->set_fd(devfd, READ);
+    
 	memset(devbuf, 0, DEVBUF_SIZE);
 
 	SERIAL_RUNNING = true;	
 	while(SERIAL_RUNNING) {
-		if(selector.select(NULL) == -1) {
-			cout << "select error" << endl;
-			sleep(1);
+		if(selector->select(NULL) == -1) {
+			log_e("select error: %s", strerror(errno));
+			sleep(2);
             continue;
 		} 
 	
 		int devbytes = 0;
-		if(selector.fd_isset(devfd, READ)) {   
+		if(selector->fd_isset(devfd, READ)) {   
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 			if(devbytes <= 0) {
 				cout << DEVNAME << " closed" << endl;
 				//todo: log
 				close(devfd);
-				selector.fd_clr(devfd, READ);
+				selector->fd_clr(devfd, READ);
 				break;
 				//todo: reopen dev
 			} else {
@@ -172,14 +176,12 @@ void* serial_listen_run(void* arg)
 				pthread_mutex_unlock(&rb_mutex);
 				dev_log(DEVNAME, devbuf, devbytes);				
 			}
-			
         } 
-		
 	}
-	
-out:
-	cout << "serial thread exit" << endl;
-	//todo: log	
+
+    close(devfd);
+out:    
+	log_i("serial listen thread exit...");
    
 	return 0;
 }
