@@ -76,6 +76,20 @@ ElogErrCode elog_init(void) {
 }
 
 /**
+ * EasyLogger close and cleanup.
+ *
+ * @return result
+ */
+ElogErrCode elog_close(void) {
+    ElogErrCode result = ELOG_NO_ERR;
+
+    /* port close and cleanup */
+    result = elog_port_close();
+
+    return result;
+}
+
+/**
  * EasyLogger start after initialize.
  */
 void elog_start(void) {

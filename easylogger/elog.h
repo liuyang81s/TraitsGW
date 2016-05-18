@@ -124,11 +124,13 @@ typedef struct {
 
 /* EasyLogger error code */
 typedef enum {
-    ELOG_NO_ERR,
+    ELOG_NO_ERR = 0,
+	ELOG_FILE_OPEN_ERROR,
 } ElogErrCode;
 
 /* elog.c */
 ElogErrCode elog_init(void);
+ElogErrCode elog_close(void);
 void elog_start(void);
 void elog_set_output_enabled(bool enabled);
 bool elog_get_output_enabled(void);
@@ -211,6 +213,7 @@ size_t elog_strcpy(size_t cur_len, char *dst, const char *src);
 
 /* elog_port.c */
 ElogErrCode elog_port_init(void);
+ElogErrCode elog_port_close(void);
 void elog_port_output(const char *log, size_t size);
 void elog_port_output_lock(void);
 void elog_port_output_unlock(void);
