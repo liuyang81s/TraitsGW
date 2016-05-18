@@ -14,6 +14,7 @@
 #include "httptool.h"
 #include "devs.h"
 #include "serial.h"
+#include "traits_elog.h"
 #include "gw.h"
 
 #define	CONFIG_PATH "/etc/config/device" 
@@ -53,8 +54,7 @@ void TraitsGW::init()
     collect_cycle = 0;
 	tmlist = new TimerList();
 	if(tmlist == NULL) {
-		cout << "TimerList alloction failed" << endl;
-		//todo: log
+		log_e("TimerList alloction failed");
         //todo: throw exception
 	}	
     
@@ -93,8 +93,7 @@ string TraitsGW::get_self_id()
 
 	ifstream mac_in(ETH0_MAC_ADDR);
 	if(!mac_in) {
-		cout << ETH0_MAC_ADDR << " not found" << endl;
-		//todo: log
+		log_e("%s not found, cannot get self id", ETH0_MAC_ADDR);
 		return "";
 	}	
 
@@ -129,8 +128,7 @@ TRAITScode TraitsGW::request_init()
 	//read config file, get gage info 
 	ifstream config_file(CONFIG_PATH);
 	if(!config_file) {
-		cout << CONFIG_PATH << " not found" << endl;
-		//todo: log
+	    log_e("%s not found", CONFIG_PATH);
 		return TRAITSE_CONFIG_FILE_NOT_FOUND;	
 	}
 
@@ -191,15 +189,10 @@ TRAITScode TraitsGW::request_init()
     htool.Post(strUrl, strPost, strResponse);
     
 	if(strResponse.empty()){
-#ifdef TRAITS_DEBUG_GW
-        cout << "response empty" << endl;
-#endif
-		//todo:log
+        log_w("init response empty");
         return TRAITSE_RESPONSE_NONE;
     } else {
-#ifdef TRAITS_DEBUG_GW
-        cout << "strResponse=" << strResponse << endl;
-#endif
+        log_d("initResponse=%s", strResponse.c_str());
 		return init_response_handler(strResponse);
 	}
 }
@@ -223,13 +216,11 @@ TRAITScode TraitsGW::heartbeat()
     json_object_put(hb_object);
 
     if(strResponse.empty()){
-#ifdef TRAITS_DEBUG_HB
-        cout << "response empty" << endl;
-#endif
+        log_w("hb response empty");
         return TRAITSE_RESPONSE_NONE;
     } else {
 #ifdef TRAITS_DEBUG_HB
-        cout << "strResponse=" << strResponse << endl;
+        log_d("hbResponse=%s", strResponse.c_str());
 #endif
 		//todo:parse strResponse, and handle it
 		return TRAITSE_OK;
@@ -247,9 +238,6 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
     		sprintf((char*)str + i * 3, "%2x ", hex[i]);
 	}
     str[i * 3 - 1] = 0;    
-#if 1
-    cout << "packet=" << str << endl;
-#endif
 } 
 
 
@@ -292,12 +280,10 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
     json_object_put(data_object);
     
 	if(strResponse.empty()) {
-#ifdef TARAITS_DEBUG_GW 
-        cout << "response empty" << endl;
-#endif
+        log_w("data response empty");
         return TRAITSE_RESPONSE_NONE;
     } else {
-        cout << "strResponse=" << strResponse << endl;
+        log_d("dataResponse=%s", strResponse.c_str());
 		return TRAITSE_OK;
 	}
 }
@@ -335,8 +321,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
-        cout << "init response string is invalid" << endl;
-        //todo: log
+        log_e("init response string is invalid");
         return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
@@ -372,8 +357,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
         proto = PROTO_OTHER;
     else {
         proto = PROTO_INVALID;
-        cout << "'modbusType' invalid" << endl;
-        //todo: log
+        log_e("modbusType invalid: %d", p);
 		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
@@ -387,8 +371,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
         uart_mode = UART_LISTEN;
     else {
         uart_mode = UART_INVALID;
-        cout << "'isListen' invalid" << endl;
-        //todo: log
+        log_e("isListen invalid: %d", is_listen);
 		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
@@ -404,8 +387,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
         send_type = SEND_HEX;
     else {
         send_type = SEND_INVALID;
-        cout << "'send_type' invalid" << endl;
-        //todo: log
+        log_e("send_type invalid: %d", stype);
 		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
@@ -423,8 +405,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
         plan_mode = PLAN_UPDATE;
     else { 
         plan_mode = PLAN_INVALID;
-        cout << "'isPlan' invalid" << endl;
-        //todo: log
+        log_e("isPlan invalid: %d", isplan);
 		ret = TRAITSE_RESPONSE_CONTENT_ERROR;
         goto release_json_obj;
     }
@@ -445,8 +426,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 		//make new timer, add to timerlist
 		Timer* tm = new WeeklyTimer(collect_cycle);
 		if(NULL == tm){
-			cout << "Timer alloction failed" << endl;
-			//todo:log
+			log_e("Timer alloction failed");
             tmlist->clean_timers();
 			ret = TRAITSE_MEM_ALLOC_FAILED;
             goto release_json_obj;
@@ -455,7 +435,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
 			//todo:log it or led indication
 			//plan time format error, but we just ignore it
 			//and move to next
-            cout << "set_time failed" << endl;
+            log_e("set_time failed");
 			continue;
 		}
 		tm->onTime = serial_onTime;
@@ -484,7 +464,7 @@ release_json_obj:
     if(TRAITSE_OK != ret || 0 != srv_ret_code){
         //todo: LED error indication
         if(0 != srv_ret_code) {
-            //todo: log 'server ret 1'
+            log_w("server return code = %d", srv_ret_code);
             ret = TRAITSE_OK; //packet parse correctly, so we return true
         }
         return ret;
@@ -494,9 +474,8 @@ release_json_obj:
     struct tm tm;
     memset(&tm, 0, sizeof(struct tm));
     if(NULL == strptime(server_time.c_str(), "%Y-%m-%d %H:%M:%S", &tm)) {
-        cout << "server time format error" << endl;
-        //todo:log 
-        //不设置时间，取RTC时间
+        log_e("server time format error");
+        //todo: 不设置时间，取RTC时间
     } else {  
         struct timeval tv;
         //考虑到server取时间、传输、客户端处理等过程
@@ -518,8 +497,7 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
-        cout << "data response string is invalid" << endl;
-        //todo: log
+        log_e("data response string is invalid");
         return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
@@ -535,6 +513,7 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     json_object_put(temp_obj);
    
     if(0 != srv_ret_code){
+        log_w("server return code = %d", srv_ret_code);
         ;//todo: LED error indication
     }
 
@@ -552,8 +531,7 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     json_object *temp_obj; 
     json_object *full_obj = json_tokener_parse(response.c_str()); 
     if(is_error(full_obj)){
-        cout << "init response string is invalid" << endl;
-        //todo: log
+        log_e("init response string is invalid");
         return TRAITSE_RESPONSE_FORMAT_ERROR;
     }
 
@@ -585,7 +563,8 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     }
     else {
         plan_mode = PLAN_INVALID;
-        //todo: log, led indication
+        //todo: led indication
+        log_e("plan_mode invalid: %d", isplan);
         return TRAITSE_OK;
     }
 
@@ -606,15 +585,13 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
 #endif
         Timer* tm = new WeeklyTimer(collect_cycle);
         if(NULL == tm) {
-            cout << "Timer alloction failed" << endl;
-            //todo: log
+            log_e("Timer alloction failed");
             tmlist->clean_timers();
             ret = TRAITSE_MEM_ALLOC_FAILED;
             goto release_json_obj;
         }
         if(TRAITSE_OK != tm->set_time(tv)) {
-            //todo:log 
-            cout << "set time failed" << endl;
+            log_e("set time failed");
             continue;
         }
         tm->onTime = serial_onTime;
@@ -645,14 +622,13 @@ void rbuffer_log(const char* prefix, uint8_t *buf, int size)
 //网络数据转发线程
 void* gw_run(void* arg)
 {
-	cout << "gw thread running" << endl;		
+	log_i("gw thread running...");		
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
 	Device* dev = new SONBEST_SD5110B(0x1);
 	if(NULL == dev) {
-		//todo: log
-		cout << "mem alloc failed" << endl;
+		log_e("mem alloc failed");
 		goto out;
 	}
 
@@ -691,8 +667,7 @@ void* gw_run(void* arg)
 	delete dev;
 
 out:
-	cout << "gw thread exit" << endl;
-	//todo: log
+	log_i("gw thread exit...");
 	
 	return 0;
 }
@@ -700,7 +675,7 @@ out:
 //心跳报文线程
 void* hb_run(void* arg)
 {
-	cout << "hb thread running" << endl;		
+	log_i("hb thread running...");		
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
@@ -715,7 +690,7 @@ void* hb_run(void* arg)
 	    //todo: handle the response	
 	}
 
-	cout << "hb thread exit" << endl;
+	log_i("hb thread exit...");
 	
 	return 0;
 }

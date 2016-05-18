@@ -109,7 +109,6 @@ RBUFFER_ERROR:
 	
 FATAL_OUT:
 	while(true) {
-		cout << "fatal error" << endl;	
 		//TODO:LED indication
         sleep(5);
 	}
