@@ -1,8 +1,9 @@
-LIB = libpacketfilemgr.a
+LIB = libpfmgr.a
 
 INCLUDE_DIRS = $(ROOT)/packetfilemgr \
-               $(ROOT)/easylogger \
-               $(ROOT)/gw
+			$(ROOT)/easylogger \
+			$(ROOT)/gw
+
 BUILD_DIR = $(BUILDS)/packetfilemgr
 LINK_LIBS = 
 

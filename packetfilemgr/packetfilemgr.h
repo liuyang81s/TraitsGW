@@ -5,8 +5,8 @@
 #include <string>
 #include <list>
 #include <stdio.h>
-
-#include "traits.h"
+		 
+#include "../gw/traits.h"
 
 #define PACKET_LINE_SIZE 1024
 

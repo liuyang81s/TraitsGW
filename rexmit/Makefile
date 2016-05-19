@@ -6,7 +6,7 @@ INCLUDE_DIRS = $(ROOT)/http \
 				$(ROOT)/gw
 
 BUILD_DIR = $(BUILDS)/rexmit
-LINK_LIBS = http packetfilemgr elog\
+LINK_LIBS = http pfmgr elog\
 			curl 
 
 EXE = traitsrexmit

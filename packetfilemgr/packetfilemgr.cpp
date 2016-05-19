@@ -11,9 +11,9 @@
 #include <dirent.h>
 #include <errno.h>
 
+#include "traits.h"
 #include "packetfilemgr.h"
 #include "traits_elog.h"
-#include "traits.h"
 
 
 PacketFileMgr::PacketFileMgr()

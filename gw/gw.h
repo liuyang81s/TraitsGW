@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "serial.h"
 #include "timerlist.h"
+#include "packetfilemgr.h"
 #include "traits.h"
 
 using namespace std;
@@ -78,6 +79,8 @@ protected:
     PLAN_MODE plan_mode;
 	TimerList* tmlist;		
     uint8_t collect_cycle;    
+
+	PacketFileMgr pfmgr;
 };
 
 #endif

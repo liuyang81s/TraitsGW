@@ -5,11 +5,12 @@ INCLUDE_DIRS = $(ROOT)/ringbuffer \
                 $(ROOT)/timerlist \
                 $(ROOT)/devs \
 				$(ROOT)/http \
+				$(ROOT)/packetfilemgr \
 				$(ROOT)/easylogger
 
 
 BUILD_DIR = $(BUILDS)/gw
-LINK_LIBS = ringbuffer devs crc tmlist http packetfilemgr elog \
+LINK_LIBS = ringbuffer devs crc tmlist http pfmgr elog \
             json-c curl event pthread
 
 

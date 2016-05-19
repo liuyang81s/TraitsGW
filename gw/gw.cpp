@@ -14,6 +14,7 @@
 #include "httptool.h"
 #include "devs.h"
 #include "serial.h"
+#include "packetfilemgr.h"
 #include "traits_elog.h"
 #include "gw.h"
 
@@ -39,6 +40,7 @@ TraitsGW::TraitsGW(const string& url)
 	server_url = url;
 }
 
+//TODO: move out from constructor
 void TraitsGW::init()
 {
 	gage_name.clear();
@@ -57,7 +59,14 @@ void TraitsGW::init()
 		log_e("TimerList alloction failed");
         //todo: throw exception
 	}	
-    
+   
+	TRAITScode ret = TRAITSE_LAST;
+	ret = pfmgr.set_dir(FILEBUF_PATH);    
+    if(TRAITSE_OK != ret) {
+        ;//todo:log, led indication
+        //return 0;    
+    }
+ 
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
 	vendor = "sanfeng";
@@ -178,9 +187,8 @@ TRAITScode TraitsGW::request_init()
     json_object_object_add(init_object, "id", json_object_new_string(self_id.c_str()));
 
     string strPost(json_object_to_json_string(init_object));
-#ifdef TRAITS_DEBUG_GW
-    cout << strPost << endl;
-#endif
+    log_d("init_TO_server: %s", strPost.c_str());
+
     json_object_put(init_object);
 
     string  strUrl = server_url + INIT_URL;
@@ -205,7 +213,7 @@ TRAITScode TraitsGW::heartbeat()
 
     string strPost(json_object_to_json_string(hb_object));
 #ifdef TRAITS_DEBUG_HB
-	cout << strPost << endl;
+	log_d("hb_TO_server: %s", strPost.c_str());
 #endif
 
     string  strUrl = server_url + HB_URL;
@@ -219,13 +227,9 @@ TRAITScode TraitsGW::heartbeat()
         log_w("hb response empty");
         return TRAITSE_RESPONSE_NONE;
     } else {
-#ifdef TRAITS_DEBUG_HB
         log_d("hbResponse=%s", strResponse.c_str());
-#endif
-		//todo:parse strResponse, and handle it
-		return TRAITSE_OK;
+		return hb_response_handler(strResponse);
 	}
-
 }
 
 static void hex2str(uint8_t* str, uint8_t* hex, int size)
@@ -269,9 +273,7 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 
 	
     string strPost(json_object_to_json_string(data_object));
-#ifdef TRAITS_DEBUG_GW
-    cout << strPost << endl;
-#endif
+    log_d("data_TO_server: %s", strPost.c_str());
 
     string  strResponse;
     HttpTool hdd;
@@ -280,11 +282,15 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
     json_object_put(data_object);
     
 	if(strResponse.empty()) {
-        log_w("data response empty");
-        return TRAITSE_RESPONSE_NONE;
+		log_w("data packet report failed, write to file");
+		TRAITScode ret = pfmgr.put_today_record(strPost);
+		if(TRAITSE_OK != ret)
+			return ret;
+		else
+	        return TRAITSE_RESPONSE_NONE;
     } else {
         log_d("dataResponse=%s", strResponse.c_str());
-		return TRAITSE_OK;
+		return data_response_handler(strResponse);
 	}
 }
 
@@ -579,10 +585,9 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
     for(int i = 0; i < json_object_array_length(temp_obj); i++){
         timer_obj = json_object_array_get_idx(temp_obj, i);
         string tv = json_object_get_string(timer_obj);
-#ifdef TRAITS_DEBUG_GW
-        cout << "timer = " << tv << endl;
-#endif
-        Timer* tm = new WeeklyTimer(collect_cycle);
+        log_i("new plan time = %s", tv.c_str());
+        
+		Timer* tm = new WeeklyTimer(collect_cycle);
         if(NULL == tm) {
             log_e("Timer alloction failed");
             tmlist->clean_timers();
@@ -596,7 +601,6 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
         tm->onTime = serial_onTime;
         //todo: stop and clean the current timers
         //todo: then add new timers
-        cout << "add a timer" << endl;
         tmlist->add_timer(tm);
     }
 
@@ -646,7 +650,7 @@ void* gw_run(void* arg)
 				if(packet_len > 0) {
 					memset(packet_buf, 0, packet_len);
 					rbuffer->get(packet_buf, packet_len);
-#if 1
+#ifdef TRAITS_DEBUG_GW
                     rbuffer_log("rbuffer", packet_buf, packet_len);
 #endif
 					break;
@@ -656,11 +660,7 @@ void* gw_run(void* arg)
 		}
 		pthread_mutex_unlock(&rb_mutex);
 		
-		cout << "packet to json, send to server" << endl;
-		if(false == gw->report(packet_buf, packet_len))
-			//todo: retransmit this packet, or log it
-			;
-	    	
+		gw->report(packet_buf, packet_len);
 	}
 
 	delete dev;
@@ -674,7 +674,7 @@ out:
 //心跳报文线程
 void* hb_run(void* arg)
 {
-	log_i("hb thread running...");		
+	log_i("heartbeat thread running...");		
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
@@ -686,10 +686,9 @@ void* hb_run(void* arg)
 		gw->heartbeat();
 
 		sleep(HB_PERIOD);
-	    //todo: handle the response	
 	}
 
-	log_i("hb thread exit...");
+	log_i("heartbeat thread exit...");
 	
 	return 0;
 }

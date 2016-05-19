@@ -2,12 +2,12 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include "traits.h"
 #include "gw.h"
 #include "serial.h"
 #include "timer.h"
 #include "timerlist.h"
 #include "traits_elog.h"
-#include "traits.h"
 #include "main.h"
 
 using namespace std;
