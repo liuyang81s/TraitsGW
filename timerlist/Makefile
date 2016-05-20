@@ -1,7 +1,9 @@
 LIB = libtmlist.a
 
 INCLUDE_DIRS = $(ROOT)/timerlist \
-			$(ROOT)/gw
+				$(ROOT)/easylogger \
+				$(ROOT)/gw
+
 BUILD_DIR = $(BUILDS)/timerlist
 LINK_LIBS = 
 

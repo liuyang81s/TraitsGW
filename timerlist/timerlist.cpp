@@ -1,17 +1,23 @@
 #include <iostream>
 #include <event.h>
+#include <pthread.h>
 
 #include "timer.h"
 #include "timerlist.h"
+#include "traits_elog.h"
 
 using namespace std;
 
 //todo: add checking for if the time is correct
 static void internal_onTimer(int sock, short event, void *arg)
 {
+#if 1 //debug
 	cout << "internal onTimer" << endl;
+#endif
 
 	TimerList* tmlist = (TimerList*)arg;
+	tmlist->lock();
+
 	struct event* ev = tmlist->get_event();	
 	list<Timer*>* timers = tmlist->get_timers();
 
@@ -25,7 +31,6 @@ static void internal_onTimer(int sock, short event, void *arg)
 
 		tmlist->update_timer(tm->get_time());
 	}	
-
 
 	//如果定时器是周期性的，再次加入链表
 	if((tm != NULL) & (tm->get_period() > 0))
@@ -43,6 +48,8 @@ static void internal_onTimer(int sock, short event, void *arg)
 		timeval tv = (tm->get_time());
 		evtimer_add(ev, &tv);
 	}
+
+	tmlist->unlock();
 }
 
 /*---------------------------------------------------------------
@@ -50,8 +57,9 @@ static void internal_onTimer(int sock, short event, void *arg)
  */
 TimerList::TimerList()
 {
-	_base = event_base_new();
-	_evTime = evtimer_new(_base, internal_onTimer, this);
+	_base = NULL;
+	_evTime = NULL;
+	_list.clear();	
 }
 
 TimerList::~TimerList()
@@ -60,11 +68,26 @@ TimerList::~TimerList()
 	event_base_free(_base);
 
     clean_timers();
+
+	pthread_mutex_destroy(&_mutex);
 }
 
-void TimerList::init()
+bool TimerList::init()
 {
-	//_evTime = evtimer_new(_base, internal_onTimer, this);
+	_base = event_base_new();
+	if(NULL == _base) {
+		log_e("create new event_base for libevent failed");
+		return false;
+	}
+	_evTime = evtimer_new(_base, internal_onTimer, this);
+	if(NULL == _evTime) {
+		log_e("create new event for libevent failed");
+		return false;
+	}
+
+	pthread_mutex_init(&_mutex, NULL);
+
+	return true;
 }
 
 void TimerList::start()
@@ -97,8 +120,12 @@ static bool compare_timer (const Timer* first, const Timer* second)
 
 void TimerList::add_timer(Timer* tm)
 {
+	pthread_mutex_lock(&_mutex);	
+
 	_list.push_back(tm);
 	_list.sort(compare_timer);
+
+	pthread_mutex_unlock(&_mutex);	
 }
 
 void TimerList::delete_timer(Timer* tm)
@@ -121,13 +148,28 @@ int TimerList::size()
 	return _list.size();
 }
 
+void TimerList::lock()
+{
+	pthread_mutex_lock(&_mutex);
+}
+
+void TimerList::unlock()
+{
+	pthread_mutex_unlock(&_mutex);
+}
+
 void TimerList::clean_timers()
 {
+	pthread_mutex_lock(&_mutex);	
+
 	list<Timer*>::iterator it; 	
     for(it = _list.begin(); it != _list.end(); ++it)
     {   
         delete (*it);
     } 	
+	_list.clear();
+
+	pthread_mutex_unlock(&_mutex);
 }
 
 void TimerList::update_timer(const timeval& tv)
@@ -143,5 +185,4 @@ void TimerList::update_timer(const timeval& tv)
 		(*it)->set_time(temp_tv);
     }  	
 }
-
 

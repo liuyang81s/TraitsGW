@@ -5,6 +5,7 @@
 #include <list>
 #include <stdint.h>
 #include <event.h>
+#include <pthread.h>
 
 #include "timer.h"
 
@@ -14,7 +15,7 @@ public:
 	TimerList();
 	virtual ~TimerList();
 	
-	void init();
+	bool init();
 	void start();	
 
 	void add_timer(Timer* tm);
@@ -27,10 +28,15 @@ public:
 
     int size();
 
+	void lock();
+	void unlock();
+
 protected:
 	struct event_base* _base;
 	struct event* _evTime;
     std::list<Timer*> _list;
+	
+	pthread_mutex_t  _mutex;
 };
 
 #endif

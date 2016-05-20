@@ -58,6 +58,9 @@ void TraitsGW::init()
 	if(tmlist == NULL) {
 		log_e("TimerList alloction failed");
         //todo: throw exception
+	}
+	if(false == tmlist->init()) {
+		;//todo
 	}	
    
 	TRAITScode ret = TRAITSE_LAST;
@@ -217,9 +220,9 @@ TRAITScode TraitsGW::heartbeat()
 #endif
 
     string  strUrl = server_url + HB_URL;
-        string  strResponse;
-        HttpTool hdd;
-        hdd.Post(strUrl, strPost, strResponse);
+    string  strResponse;
+    HttpTool hdd;
+    hdd.Post(strUrl, strPost, strResponse);
 
     json_object_put(hb_object);
 
@@ -525,7 +528,6 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     return TRAITSE_OK;
 }
 
-
 TRAITScode TraitsGW::hb_response_handler(const string& response)
 {
     if(response.empty())
@@ -559,14 +561,12 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
         plan_mode = PLAN_NONE;
         tmlist->clean_timers();
         return TRAITSE_OK;
-    }
-    else if(1 == isplan)
+    } else if(1 == isplan)
         plan_mode = PLAN_UPDATE;
     else if(2 == isplan) {
         plan_mode = PLAN_REMAIN;
         return TRAITSE_OK;
-    }
-    else {
+    } else {
         plan_mode = PLAN_INVALID;
         //todo: led indication
         log_e("plan_mode invalid: %d", isplan);
@@ -603,6 +603,9 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
         //todo: then add new timers
         tmlist->add_timer(tm);
     }
+//todo:hb更新timerlist的时候
+//先构造新的list，把新的timer加入到该list
+//所有timer添加完毕后，用新list替换旧list
 
 release_json_obj:    
     json_object_put(timer_obj);
@@ -612,7 +615,7 @@ release_json_obj:
     return ret;
 }
 
-void rbuffer_log(const char* prefix, uint8_t *buf, int size)        
+static void rbuffer_log(const char* prefix, uint8_t *buf, int size)        
 {
     cout << prefix << ": ";                                                                                     
     cout.fill('0');

@@ -54,38 +54,32 @@ void serial_onTime(void *arg)
     //todo: if fail
 
 	memset(devbuf, 0, DEVBUF_SIZE);
-	while(true) {
-		int r = selector->select(&read_timeout);
-        if(-1 == r)
-        {
-			log_e("select error: %s", strerror(errno));
-            return;
-		} else if (0 == r) {    //time out
-            log_w("select read timeout");
-            return;
-        }
-	
-		int devbytes = 0;
-		if(selector->fd_isset(devfd, READ)) {   
-			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
-			if(devbytes <= 0) {
-				cout << DEVNAME << " closed" << endl;
-				//todo: log
-				close(devfd);
-				selector->fd_clr(devfd, READ);
-				break;
-				//todo: reopen dev
-			} else {
-                pthread_mutex_lock(&rb_mutex);
-                rbuffer->put(devbuf, devbytes);
-                pthread_cond_signal(&rb_cond);
-                pthread_mutex_unlock(&rb_mutex);                
-				dev_log(DEVNAME, devbuf, devbytes);				
-                break;
-			}
-        } 
-	}
-
+	int r = selector->select(&read_timeout);
+    if(-1 == r) {			
+		log_e("select error: %s", strerror(errno));        
+	    return;
+	} else if (0 == r) {    //time out            
+		log_w("select read timeout");
+        return;
+    }
+		
+	int devbytes = 0;		
+	if(selector->fd_isset(devfd, READ)) {   
+		devbytes = read(devfd, devbuf, DEVBUF_SIZE);
+		if(devbytes <= 0) {
+			cout << DEVNAME << " closed" << endl;
+			//todo: log
+			close(devfd);
+			selector->fd_clr(devfd, READ);
+			//todo: reopen dev			
+		} else {
+			pthread_mutex_lock(&rb_mutex);
+		    rbuffer->put(devbuf, devbytes);
+	        pthread_cond_signal(&rb_cond);
+            pthread_mutex_unlock(&rb_mutex);                
+			dev_log(DEVNAME, devbuf, devbytes);				
+		}
+	} 
 } 
 
 void* serial_poll_run(void* arg)
