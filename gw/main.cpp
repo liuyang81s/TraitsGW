@@ -29,8 +29,11 @@ int main()
 	log_i("GW starting...");
 
 	TraitsGW gw(SERVER_URL);
-	gw.init();
-	
+	if(TRAITSE_OK != gw.init()) {
+		log_e("gw init failed");
+		return 0;
+	}
+
 	while(true) {
 		int init_ret = gw.request_init();
 		if(TRAITSE_OK == init_ret)
