@@ -21,19 +21,19 @@ static void internal_onTimer(int sock, short event, void *arg)
 	struct event* ev = tmlist->get_event();	
 	list<Timer*>* timers = tmlist->get_timers();
 
-	//取队列头第一个timer,执行,删除
-	Timer* tm = NULL;
-	if(!timers->empty())
-	{
-		tm = timers->front();
-		tm->onTime(arg);
-		timers->pop_front();
+	if(timers->empty()) {
+		tmlist->unlock();
+		return;
+	}
 
-		tmlist->update_timer(tm->get_time());
-	}	
+	//取队列头第一个timer,执行,删除
+	Timer* tm = timers->front();
+	tm->onTime(arg);
+	timers->pop_front();
+	tmlist->update_timer(tm->get_time());
 
 	//如果定时器是周期性的，再次加入链表
-	if((tm != NULL) & (tm->get_period() > 0))
+	if(tm->get_period() > 0)
 	{
 		timeval tv = tm->get_time();
 		tv.tv_sec = tm->get_period();
@@ -42,12 +42,9 @@ static void internal_onTimer(int sock, short event, void *arg)
 	}
 
 	//若队列不空,用下一个timer更新定时器
-	if(!timers->empty())
-	{
-		Timer* tm = timers->front();
-		timeval tv = (tm->get_time());
-		evtimer_add(ev, &tv);
-	}
+	tm = timers->front();
+	timeval tv = (tm->get_time());
+	evtimer_add(ev, &tv);
 
 	tmlist->unlock();
 }

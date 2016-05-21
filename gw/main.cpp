@@ -117,9 +117,9 @@ FATAL_OUT:
         sleep(5);
 	}
 
-	close_elog();	
-
 	log_i("GW exit...");
+
+	close_elog();	
 
 	return 0;
 }
