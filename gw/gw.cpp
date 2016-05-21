@@ -295,7 +295,9 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
     
 	if(strResponse.empty()) {
 		log_w("data packet report failed, write to file");
-		TRAITScode ret = pfmgr.put_today_record(strPost);
+		//当保存在fat32文件系统上时，显式加上换行符
+		//否则所有记录会保存为同一行
+		TRAITScode ret = pfmgr.put_today_record(strPost + "\n");
 		if(TRAITSE_OK != ret)
 			return ret;
 		else
