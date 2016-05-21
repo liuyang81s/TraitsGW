@@ -73,22 +73,22 @@ TimerList::~TimerList()
 	pthread_mutex_destroy(&_mutex);
 }
 
-bool TimerList::init()
+TRAITScode TimerList::init()
 {
 	_base = event_base_new();
 	if(NULL == _base) {
 		log_e("create new event_base for libevent failed");
-		return false;
+		return TRAITSE_LIBEVENT_ERROR;
 	}
 	_evTime = evtimer_new(_base, internal_onTimer, this);
 	if(NULL == _evTime) {
 		log_e("create new event for libevent failed");
-		return false;
+		return TRAITSE_LIBEVENT_ERROR;
 	}
 
 	pthread_mutex_init(&_mutex, NULL);
 
-	return true;
+	return TRAITSE_OK;
 }
 
 void TimerList::start()

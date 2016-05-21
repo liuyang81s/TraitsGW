@@ -45,6 +45,8 @@ public:
 	TraitsGW();
 	TraitsGW(const string& url);
 	~TraitsGW();	
+	
+	TRAITScode init();
 
 	TRAITScode request_init();
 	TRAITScode heartbeat();
@@ -57,7 +59,6 @@ public:
 	TimerList* get_timerlist() const;		
 
 protected:
-	void init();
 	string get_self_id();
 
     TRAITScode init_response_handler(const string& response);

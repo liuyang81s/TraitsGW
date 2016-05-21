@@ -17,10 +17,10 @@ SONBEST_SD5110B::SONBEST_SD5110B()
 
 SONBEST_SD5110B::SONBEST_SD5110B(const uint8_t addr)
 {
-   if(addr == 0)
-      ;//todo throw exception
-
-   _addr = addr; 
+	if(addr == 0)
+		_addr = 0x01;
+	else
+		_addr = addr; 
 }
 
 SONBEST_SD5110B::~SONBEST_SD5110B()

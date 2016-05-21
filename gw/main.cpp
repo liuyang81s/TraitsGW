@@ -29,6 +29,7 @@ int main()
 	log_i("GW starting...");
 
 	TraitsGW gw(SERVER_URL);
+	gw.init();
 	
 	while(true) {
 		int init_ret = gw.request_init();

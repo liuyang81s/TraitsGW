@@ -7,6 +7,7 @@
 #include <event.h>
 #include <pthread.h>
 
+#include "../gw/traits.h"
 #include "timer.h"
 
 class TimerList
@@ -15,7 +16,7 @@ public:
 	TimerList();
 	virtual ~TimerList();
 	
-	bool init();
+	TRAITScode init();
 	void start();	
 
 	void add_timer(Timer* tm);

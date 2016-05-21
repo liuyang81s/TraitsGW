@@ -30,18 +30,15 @@ bool HB_RUNNING = false;
 
 TraitsGW::TraitsGW()
 {
-	init();
 	server_url = "http://traits.imwork.net:10498/AnalyzeServer/system/";
 }
 
 TraitsGW::TraitsGW(const string& url)
 {
-	init();
 	server_url = url;
 }
 
-//TODO: move out from constructor
-void TraitsGW::init()
+TRAITScode TraitsGW::init()
 {
 	gage_name.clear();
 	gage_type.clear();
@@ -54,22 +51,7 @@ void TraitsGW::init()
     proto = PROTO_INVALID;
     plan_mode = PLAN_INVALID;
     collect_cycle = 0;
-	tmlist = new TimerList();
-	if(tmlist == NULL) {
-		log_e("TimerList alloction failed");
-        //todo: throw exception
-	}
-	if(false == tmlist->init()) {
-		;//todo
-	}	
-   
-	TRAITScode ret = TRAITSE_LAST;
-	ret = pfmgr.set_dir(FILEBUF_PATH);    
-    if(TRAITSE_OK != ret) {
-        ;//todo:log, led indication
-        //return 0;    
-    }
- 
+
 #ifdef TRAITS_DEBUG
 	gage_name = "wenduji";	
 	vendor = "sanfeng";
@@ -82,6 +64,32 @@ void TraitsGW::init()
     send_type = SEND_HEX;
     plan_mode = PLAN_NONE;
 #endif
+
+	tmlist = new TimerList();
+	if(NULL == tmlist) {
+		log_e("TimerList alloction failed");
+        return TRAITSE_MEM_ALLOC_FAILED;
+	}
+
+	TRAITScode ret = TRAITSE_LAST;
+	ret = tmlist->init();	
+	if(TRAITSE_OK != ret) {
+        //todo: led indication
+		goto failed;
+	}	
+   
+	ret = pfmgr.set_dir(FILEBUF_PATH);    
+    if(TRAITSE_OK != ret) {
+        //todo: led indication
+		goto failed;
+    }
+
+	return TRAITSE_OK; 
+
+failed:
+	delete tmlist;
+
+	return ret;
 }
 
 TraitsGW::~TraitsGW()
@@ -422,6 +430,10 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     //parse 'collectCycle'
     json_object_object_get_ex(full_obj, "collectCycle", &temp_obj);
     collect_cycle = json_object_get_int(temp_obj) & 0xff;
+	if(0x80 & collect_cycle) {
+		log_w("collectCycle invalid: %2x", collect_cycle);
+		collect_cycle &= 0x7f;
+	}
     
 #ifndef TRAITS_TEST
     json_object* timer_obj;

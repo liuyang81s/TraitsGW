@@ -91,7 +91,7 @@ WeeklyTimer::WeeklyTimer(uint8_t week_mask)
 {
 	//msb of 'week_mask' must be 0
 	if(0x80 & week_mask)
-		;//todo: throw exception
+		week_mask &= 0x7f;
 
 	_period = SEC_PER_DAY;
 	_week_mask = week_mask;
