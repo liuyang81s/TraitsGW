@@ -1,8 +1,6 @@
 #ifndef TRAITS_SERIAL_H
 #define TRAITS_SERIAL_H
 
-#define POLL_MODE
-
 typedef enum{
     UART_POLL = 0,
     UART_LISTEN,
@@ -12,6 +10,7 @@ typedef enum{
 void serial_onTime(void* arg);
 void* serial_listen_run(void* arg);
 void* serial_poll_run(void* arg);
+void serial_cleanup();
 
 extern bool SERIAL_RUNNING;
 

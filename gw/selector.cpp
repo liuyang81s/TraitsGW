@@ -19,6 +19,10 @@ Selector::Selector()
 
 Selector::~Selector()
 {
+#if 1
+	std::cout << "~Selector" << std::endl;
+#endif
+
     FD_ZERO(&readfds);
     FD_ZERO(&readfdsuse);
 

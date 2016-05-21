@@ -25,6 +25,10 @@ PacketFileMgr::PacketFileMgr()
 
 PacketFileMgr::~PacketFileMgr()
 {
+#if 1
+	cout << "~PacketFileMgr" << endl;
+#endif
+
 	if(NULL != _fp)
 		fclose(_fp);	
 	

@@ -19,13 +19,13 @@
 
 using namespace std;
 
-//static const char DEVNAME[] = "/dev/ttyS0";
+static const char DEVNAME[] = "/dev/ttyS0";
 //static const char DEVNAME[] = "/dev/tty232";
 //static const char DEVNAME[] = "/dev/tty485";
-static const char DEVNAME[] = "/dev/ttyUSB1";
+//static const char DEVNAME[] = "/dev/ttyUSB1";
 
 static uint8_t devbuf[DEVBUF_SIZE];
-static int devfd = 0;
+static int devfd = -1;
 static Selector* selector = NULL;
 
 bool SERIAL_RUNNING = false;
@@ -183,4 +183,16 @@ out:
 	return 0;
 }
 
+void serial_cleanup()
+{
+#if 1
+    cout << "serial_cleanup" <<endl;
+#endif
+    
+    if(NULL != selector)
+       delete selector;
+
+    if(-1 != devfd)    
+        close(devfd);
+}
 

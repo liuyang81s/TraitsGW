@@ -8,7 +8,7 @@
 
 #define TRAITS_TEST
 
-//#define DEBUG_ON_PC
+#define DEBUG_ON_PC
 
 #ifndef DEBUG_ON_PC
 #define FILEBUF_PATH	"/mnt/sda1/filebuf/" 

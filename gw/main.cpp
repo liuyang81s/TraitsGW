@@ -1,6 +1,8 @@
 #include <iostream>
 #include <pthread.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
 
 #include "traits.h"
 #include "gw.h"
@@ -17,41 +19,80 @@ using namespace std;
 UnlockRingBuffer *rbuffer = NULL;
 pthread_mutex_t rb_mutex;
 pthread_cond_t  rb_cond;
+static TraitsGW* gw = NULL; 
+
+static void sigterm_handler(int sig)
+{
+    cout << "sigterm handler" << endl;
+    GW_RUNNING = false;
+    HB_RUNNING = false;
+        
+    serial_cleanup();
+
+    if(NULL != gw) 
+        delete gw; 
+
+    if(NULL != rbuffer)
+        delete rbuffer;
+
+    log_i("GW exit...");
+
+    close_elog();   
+
+    exit(EXIT_SUCCESS);
+}
 
 
 int main()
 {
+	signal(SIGINT, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGQUIT, SIG_IGN);                
+    signal(SIGPIPE, SIG_IGN);                        
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN); 
+    signal(SIGTERM, sigterm_handler);
+
 	if(ELOG_NO_ERR != init_elog()) {
 		cout << "elog init failed" << endl;
-		return 0;
+		goto FATAL_OUT;
 	}
 
 	log_i("GW starting...");
 
-	TraitsGW gw(SERVER_URL);
-	if(TRAITSE_OK != gw.init()) {
-		log_e("gw init failed");
-		return 0;
+	gw = new TraitsGW(SERVER_URL);
+	if(NULL == gw) {
+		log_e("TraitsGW allocation failed");
+		goto FATAL_OUT;
+	}	
+	if(TRAITSE_OK != gw->init()) {
+		log_e(" TraitsGW init failed");
+		goto GW_ERROR;
 	}
 
-	while(true) {
-		int init_ret = gw.request_init();
+	while(false) {
+		int init_ret = gw->request_init();
 		if(TRAITSE_OK == init_ret)
 			break;
 		else if(TRAITSE_CONFIG_FILE_NOT_FOUND == init_ret ||
 				TRAITSE_CONFIG_PARAM_NOT_FOUND == init_ret ||
 				TRAITSE_MAC_NOT_FOUND == init_ret ||
 				TRAITSE_MEM_ALLOC_FAILED == init_ret) {
-			goto FATAL_OUT;
+			goto GW_ERROR;
 		} else {
+			//todo: led indication
 			sleep(3);
 		}
 	}
 
 	//初始化串口数据接收缓存    
     rbuffer = new UnlockRingBuffer(RINGBUFFER_SIZE);
-    if(!rbuffer || !rbuffer->init()) {
-        log_e("ringbuffer init failed");
+    if(NULL == rbuffer) {
+		log_e("UnlockRingBuffer allocation failed");
+		goto GW_ERROR;
+	}
+	if(false == rbuffer->init()) {
+        log_e("UnlockRingBuffer init failed");
         goto RBUFFER_ERROR;
     }  
 
@@ -64,26 +105,26 @@ int main()
     pthread_t t_serial;
 	
 	int rc;
-	rc = pthread_create(&t_hb, NULL, hb_run, &gw);
+	rc = pthread_create(&t_hb, NULL, hb_run, gw);
 	if(rc){
 		log_e("pthread_create failed with %d", rc);
 		
 		goto THREAD_HB_ERROR;
 	}
 	
-    rc = pthread_create(&t_gw, NULL, gw_run, &gw);
+    rc = pthread_create(&t_gw, NULL, gw_run, gw);
 	if(rc){
 		log_e("pthread_create failed with %d", rc);
 		goto THREAD_GW_ERROR;
 	}
 
     //start serial thread, according uart mode	
-    if(UART_POLL == gw.get_uart_mode())
-        rc = pthread_create(&t_serial, NULL, serial_poll_run, gw.get_timerlist());
-    else if(UART_LISTEN == gw.get_uart_mode())
+    if(UART_POLL == gw->get_uart_mode())
+        rc = pthread_create(&t_serial, NULL, serial_poll_run, gw->get_timerlist());
+    else if(UART_LISTEN == gw->get_uart_mode())
         rc = pthread_create(&t_serial, NULL, serial_listen_run, NULL);
     else {
-		log_e("invalid uart_mode %d", (int)(gw.get_uart_mode()));
+		log_e("invalid uart_mode %d", (int)(gw->get_uart_mode()));
         goto THREAD_SERIAL_ERROR;
 	}    
     if(rc){
@@ -108,8 +149,12 @@ THREAD_HB_ERROR:
 	pthread_cond_destroy(&rb_cond);
 
 RBUFFER_ERROR:
-	if(!rbuffer)
+	if(NULL != rbuffer)
 		delete rbuffer;
+
+GW_ERROR:
+	if(NULL != gw)
+		delete gw;
 	
 FATAL_OUT:
 	while(true) {

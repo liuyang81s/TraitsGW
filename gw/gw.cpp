@@ -95,6 +95,9 @@ failed:
 
 TraitsGW::~TraitsGW()
 {
+#if 1
+	cout << "~TraitsGW" <<endl;
+#endif
     if(NULL != tmlist)
         delete tmlist;
 }
@@ -644,7 +647,7 @@ void* gw_run(void* arg)
 
 	Device* dev = new SONBEST_SD5110B(0x1);
 	if(NULL == dev) {
-		log_e("mem alloc failed");
+		log_e("dev mem alloc failed");
 		goto out;
 	}
 

@@ -62,6 +62,9 @@ TimerList::TimerList()
 
 TimerList::~TimerList()
 {
+#if 1
+	cout << "~TimerList" <<endl;
+#endif
 	evtimer_del(_evTime);
 	event_base_free(_base);
 
