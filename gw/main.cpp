@@ -24,16 +24,17 @@ static TraitsGW* gw = NULL;
 static void sigterm_handler(int sig)
 {
     cout << "sigterm handler" << endl;
+
     GW_RUNNING = false;
     HB_RUNNING = false;
         
     serial_cleanup();
+    
+	if(NULL != rbuffer)
+        delete rbuffer;
 
     if(NULL != gw) 
         delete gw; 
-
-    if(NULL != rbuffer)
-        delete rbuffer;
 
     log_i("GW exit...");
 
@@ -108,7 +109,6 @@ int main()
 	rc = pthread_create(&t_hb, NULL, hb_run, gw);
 	if(rc){
 		log_e("pthread_create failed with %d", rc);
-		
 		goto THREAD_HB_ERROR;
 	}
 	
@@ -157,6 +157,7 @@ GW_ERROR:
 		delete gw;
 	
 FATAL_OUT:
+    serial_cleanup(); //todo:where to put it?
 	while(true) {
 		//TODO:LED indication
         sleep(5);
@@ -168,4 +169,12 @@ FATAL_OUT:
 
 	return 0;
 }
+
+//todo:上述线程任何一个没有创建成功
+//整个程序都没法正常运行，都应该给出错误提示，等候重启
+//那么在重启之前,应该释放资源,结束掉其他线程
+//每个线程分为异常结束和正常结束两种情况，
+//可以通过pthread_join的参数返回值得知
+//异常结束时，需要接着cancel掉其他的线程，以及释放资源
+
 
