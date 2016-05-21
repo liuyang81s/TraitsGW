@@ -45,5 +45,7 @@
 #define ELOG_FILTER_KW_MAX_LEN               16
 /* output newline sign */
 #define ELOG_NEWLINE_SIGN                    "\n"
+/* output target stdout */
+#define ELOG_TARGET_STDOUT
 
 #endif /* _ELOG_CFG_H_ */

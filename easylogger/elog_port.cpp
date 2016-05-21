@@ -51,7 +51,9 @@ ElogErrCode elog_port_init(void) {
 
     pthread_mutex_init(&output_lock, NULL);
 
-#ifndef TRAITS_TEST
+#ifdef ELOG_TARGET_STDOUT
+	fp = stdout;
+#else
     if(0 != mkdir(LOG_PATH, 0755)) {
         if(EEXIST != errno) {
 			perror(strerror(errno));
@@ -91,7 +93,7 @@ ElogErrCode elog_port_close(void) {
 
     pthread_mutex_destroy(&output_lock);
 
-#ifndef TRAITS_TEST
+#ifndef ELOG_TARGET_STDOUT
     fclose(fp);
 #endif
 
@@ -104,14 +106,9 @@ ElogErrCode elog_port_close(void) {
  * @param log output of log
  * @param size log size
  */
-//todo:output to file or stdout
 void elog_port_output(const char *log, size_t size) {
-#ifdef TRAITS_TEST
-    fprintf(stdout, "%.*s", (int)size, log);
-#else
     fprintf(fp, "%.*s", (int)size, log);
     fflush(fp);
-#endif
 }
 
 /**
