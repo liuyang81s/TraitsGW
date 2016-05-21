@@ -11,6 +11,7 @@
 #include <json-c/bits.h>
 
 #include "main.h"
+#include "defines.h"
 #include "httptool.h"
 #include "devs.h"
 #include "serial.h"

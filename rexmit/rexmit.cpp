@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string>
 
+#include "defines.h"
 #include "traits.h"
 #include "httptool.h"
 #include "packetfilemgr.h"

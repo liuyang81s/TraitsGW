@@ -38,11 +38,4 @@ typedef enum {
 #define DATA_URL "data.do"
 #define HB_URL	"refresh.do"
 
-#if 0
-#define FILEBUF_PATH	"/mnt/sda1/filebuf/" 
-#else
-#define FILEBUF_PATH	"/home/ayang/test/filebuf/"
 #endif
-
-#endif
-

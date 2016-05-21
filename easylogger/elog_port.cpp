@@ -36,10 +36,7 @@
 #include <sys/stat.h>       
 #include <sys/types.h>
 
-#define LOG_PATH "/home/ayang/test/logs/"
-//#define LOG_PATH "/mnt/sdb1/logs/"
-
-//#define APP_DEBUG
+#include "defines.h"
 
 static pthread_mutex_t output_lock;
 static FILE* fp;
@@ -54,7 +51,7 @@ ElogErrCode elog_port_init(void) {
 
     pthread_mutex_init(&output_lock, NULL);
 
-#ifndef APP_DEBUG
+#ifndef TRAITS_TEST
     if(0 != mkdir(LOG_PATH, 0755)) {
         if(EEXIST != errno) {
 			perror(strerror(errno));
@@ -94,7 +91,7 @@ ElogErrCode elog_port_close(void) {
 
     pthread_mutex_destroy(&output_lock);
 
-#ifndef APP_DEBUG
+#ifndef TRAITS_TEST
     fclose(fp);
 #endif
 
@@ -109,7 +106,7 @@ ElogErrCode elog_port_close(void) {
  */
 //todo:output to file or stdout
 void elog_port_output(const char *log, size_t size) {
-#ifdef APP_DEBUG
+#ifdef TRAITS_TEST
     fprintf(stdout, "%.*s", (int)size, log);
 #else
     fprintf(fp, "%.*s", (int)size, log);

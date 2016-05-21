@@ -9,6 +9,7 @@
 #include "selector.h"
 #include "serial.h"
 #include "main.h"
+#include "defines.h"
 #include "devs.h"
 #include "timerlist.h"
 #include "traits_elog.h"
@@ -18,9 +19,11 @@
 
 using namespace std;
 
-static const char DEVNAME[] = "/dev/ttyS0";
+//static const char DEVNAME[] = "/dev/ttyS0";
 //static const char DEVNAME[] = "/dev/tty232";
 //static const char DEVNAME[] = "/dev/tty485";
+static const char DEVNAME[] = "/dev/ttyUSB1";
+
 static uint8_t devbuf[DEVBUF_SIZE];
 static int devfd = 0;
 static Selector* selector = NULL;
