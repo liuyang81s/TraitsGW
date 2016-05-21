@@ -32,9 +32,12 @@ public:
 	void unlock();
 
 protected:
+    void clean_timers(std::list<Timer*>& l);    
+
 	struct event_base* _base;
 	struct event* _evTime;
     std::list<Timer*> _list;
+    std::list<Timer*> _temp_list;
 	
 	pthread_mutex_t  _mutex;
 };

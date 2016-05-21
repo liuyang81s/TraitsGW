@@ -60,6 +60,7 @@ TimerList::TimerList()
 	_base = NULL;
 	_evTime = NULL;
 	_list.clear();	
+	_temp_list.clear();	
 }
 
 TimerList::~TimerList()
@@ -92,15 +93,19 @@ bool TimerList::init()
 
 void TimerList::start()
 {
-	if(_list.empty())
-		return;
-	else {
-		Timer* tm = _list.front();
-		timeval tv = tm->get_time();
-	
-		evtimer_add(_evTime, &tv);  
-		event_base_dispatch(_base);
+	if(!_temp_list.empty()) {
+		pthread_mutex_lock(&_mutex);	
+		clean_timers(_list);
+		_list = _temp_list;
+		pthread_mutex_unlock(&_mutex);	
 	}
+	_temp_list.clear();	
+
+	Timer* tm = _list.front();
+	timeval tv = tm->get_time();
+
+	evtimer_add(_evTime, &tv);  
+	event_base_dispatch(_base);
 }
 
 static bool compare_timer (const Timer* first, const Timer* second)
@@ -120,12 +125,8 @@ static bool compare_timer (const Timer* first, const Timer* second)
 
 void TimerList::add_timer(Timer* tm)
 {
-	pthread_mutex_lock(&_mutex);	
-
-	_list.push_back(tm);
-	_list.sort(compare_timer);
-
-	pthread_mutex_unlock(&_mutex);	
+	_temp_list.push_back(tm);
+	_temp_list.sort(compare_timer);
 }
 
 void TimerList::delete_timer(Timer* tm)
@@ -160,16 +161,17 @@ void TimerList::unlock()
 
 void TimerList::clean_timers()
 {
-	pthread_mutex_lock(&_mutex);	
+	clean_timers(_temp_list);	
+}
 
+void TimerList::clean_timers(list<Timer*>& l)
+{
 	list<Timer*>::iterator it; 	
-    for(it = _list.begin(); it != _list.end(); ++it)
+    for(it = l.begin(); it != l.end(); ++it)
     {   
         delete (*it);
     } 	
-	_list.clear();
-
-	pthread_mutex_unlock(&_mutex);
+	l.clear();
 }
 
 void TimerList::update_timer(const timeval& tv)

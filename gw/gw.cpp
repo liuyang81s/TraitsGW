@@ -599,13 +599,8 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
             continue;
         }
         tm->onTime = serial_onTime;
-        //todo: stop and clean the current timers
-        //todo: then add new timers
         tmlist->add_timer(tm);
     }
-//todo:hb更新timerlist的时候
-//先构造新的list，把新的timer加入到该list
-//所有timer添加完毕后，用新list替换旧list
 
 release_json_obj:    
     json_object_put(timer_obj);
