@@ -12,6 +12,7 @@
 #include "defines.h"
 #include "devs.h"
 #include "timerlist.h"
+#include "traits.h"
 #include "traits_elog.h"
 
 
@@ -19,14 +20,19 @@
 
 using namespace std;
 
+#ifdef DEBUG_ON_PC
 static const char DEVNAME[] = "/dev/ttyS0";
+#else
 //static const char DEVNAME[] = "/dev/tty232";
 //static const char DEVNAME[] = "/dev/tty485";
 //static const char DEVNAME[] = "/dev/ttyUSB1";
+//static const char DEVNAME[] = "/dev/ttyUSB0";
+#endif
 
 static uint8_t devbuf[DEVBUF_SIZE];
 static int devfd = -1;
 static Selector* selector = NULL;
+static TRAITScode thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
 
 bool SERIAL_RUNNING = false;
 
@@ -88,7 +94,9 @@ void serial_onTime(void *arg)
 void* serial_poll_run(void* arg)
 {
 	log_i("serial poll thread running...");	
-    
+	
+	thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
+   
 #ifdef TRAITS_DEBUG_GW
     list<Timer*>::iterator it;                                                                        
 #endif
@@ -102,9 +110,8 @@ void* serial_poll_run(void* arg)
 
 	selector = new Selector();
     if(NULL == selector) {
-        close(devfd);
-        log_e("selector mem alloc failed");
-        goto out;
+        log_e("Selector alloc failed");
+        goto close_dev;
     }
 	selector->set_fd(devfd, READ);
 
@@ -118,19 +125,25 @@ void* serial_poll_run(void* arg)
     }
 #endif
 
-    tmlist->start(); 
+    tmlist->start(); 	//if no pending, it return
 	
+	thr_ret = TRAITSE_THREAD_EXIT_SUCCESS;
+
+close_dev:
     close(devfd);
+	devfd = -1;
 out:
 	log_i("serial poll thread exit...");
 
-	return 0;
+	return &thr_ret;
 }
 
 
 void* serial_listen_run(void* arg)
 {
 	log_i("serial listen thread running...");	
+
+	thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
 
 	devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) {
@@ -140,9 +153,8 @@ void* serial_listen_run(void* arg)
 
     selector = new Selector();
     if(NULL == selector) {                   
-        close(devfd);       
-        log_e("selector mem alloc failed");
-        goto out;
+        log_e("Selector alloc failed");
+        goto close_dev;
     }   
     selector->set_fd(devfd, READ);
     
@@ -176,11 +188,15 @@ void* serial_listen_run(void* arg)
         } 
 	}
 
+	thr_ret = TRAITSE_THREAD_EXIT_SUCCESS;
+
+close_dev:
     close(devfd);
+	devfd = -1;
 out:    
 	log_i("serial listen thread exit...");
    
-	return 0;
+	return &thr_ret;
 }
 
 void serial_cleanup()
@@ -188,11 +204,15 @@ void serial_cleanup()
 #if 1
     cout << "serial_cleanup" <<endl;
 #endif
-    
-    if(NULL != selector)
-       delete selector;
 
-    if(-1 != devfd)    
+	if(NULL != selector) {
+		delete selector;
+		selector = NULL;
+	}
+
+    if(-1 != devfd) {
         close(devfd);
+		devfd = -1;
+	}
 }
 

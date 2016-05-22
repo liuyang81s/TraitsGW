@@ -104,8 +104,10 @@ int main()
 	pthread_t t_gw;
 	pthread_t t_hb;
     pthread_t t_serial;
-	
+	TRAITScode thr_serial_ret;
+	thr_serial_ret = TRAITSE_THREAD_EXIT_ABNORMAL;
 	int rc;
+
 	rc = pthread_create(&t_hb, NULL, hb_run, gw);
 	if(rc){
 		log_e("pthread_create failed with %d", rc);
@@ -117,6 +119,9 @@ int main()
 		log_e("pthread_create failed with %d", rc);
 		goto THREAD_GW_ERROR;
 	}
+	//todo: pthread_timedjoin_np
+	//if t_gw exit abnormal, then goto THREAD_GW_ERROR;
+	//use pthread_timedjoin_np to check	
 
     //start serial thread, according uart mode	
     if(UART_POLL == gw->get_uart_mode())
@@ -131,35 +136,58 @@ int main()
         log_e("pthread_create failed with %d", rc);
         goto THREAD_SERIAL_ERROR;
     }                                    
-                               
-    pthread_join(t_serial, NULL);
+
+	void* res;
+    pthread_join(t_serial, &res);
+	thr_serial_ret = *((TRAITScode*)res); 
+#if 1
+	cout << "join ret = " << thr_serial_ret << endl;
+#endif
     SERIAL_RUNNING = false;     
 
 THREAD_SERIAL_ERROR:
-    //todo: how to make thread cancel?
-	pthread_join(t_gw, NULL);
+	//1\t_serial exit abnormal 
+	//2\t_serial create failed
+	if(TRAITSE_THREAD_EXIT_ABNORMAL == thr_serial_ret) {
+    	serial_cleanup();
+		pthread_cancel(t_gw);
+	}
 	GW_RUNNING = false;
+	pthread_join(t_gw, NULL);
+#if 1
+cout << "t_gw canceled" <<endl;
+#endif
 
 THREAD_GW_ERROR:
 	HB_RUNNING = false;
+	pthread_cancel(t_hb);
 	pthread_join(t_hb, NULL);
+#if 1
+cout << "t_hb canceled" <<endl;
+#endif
 
 THREAD_HB_ERROR:
 	pthread_mutex_destroy(&rb_mutex);
 	pthread_cond_destroy(&rb_cond);
 
 RBUFFER_ERROR:
-	if(NULL != rbuffer)
+	if(NULL != rbuffer){
 		delete rbuffer;
+		rbuffer = NULL;
+	}
 
 GW_ERROR:
-	if(NULL != gw)
+	if(NULL != gw) {
 		delete gw;
+		gw = NULL;
+	}
 	
 FATAL_OUT:
-    serial_cleanup(); //todo:where to put it?
 	while(true) {
 		//TODO:LED indication
+#if 1
+cout << "flash led" <<endl;
+#endif
         sleep(5);
 	}
 
@@ -169,12 +197,4 @@ FATAL_OUT:
 
 	return 0;
 }
-
-//todo:上述线程任何一个没有创建成功
-//整个程序都没法正常运行，都应该给出错误提示，等候重启
-//那么在重启之前,应该释放资源,结束掉其他线程
-//每个线程分为异常结束和正常结束两种情况，
-//可以通过pthread_join的参数返回值得知
-//异常结束时，需要接着cancel掉其他的线程，以及释放资源
-
 
