@@ -56,11 +56,16 @@ void serial_onTime(void *arg)
 
     cout << "onTime" << endl;
 
+	//todo: should not make a new Device in timer handler
     Device* dev = new SONBEST_SD5110B(0x1);
     //todo: if dev=NULL
 
     dev->send_cmd(NULL, devfd);
     //todo: if fail
+
+	//todo: find a way to remove this line	
+	delete dev;
+
 
 	memset(devbuf, 0, DEVBUF_SIZE);
 	int r = selector->select(&read_timeout);
