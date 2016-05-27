@@ -8,7 +8,7 @@
 
 using namespace std;
 
-//todo: add checking for if the time is correct
+//todo: add checking for if the time is correct. do we need it?
 static void internal_onTimer(int sock, short event, void *arg)
 {
 #if 1 //debug
