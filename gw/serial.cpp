@@ -33,6 +33,8 @@ static uint8_t devbuf[DEVBUF_SIZE];
 static int devfd = -1;
 static Selector* selector = NULL;
 static TRAITScode thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
+static Device* dev = NULL;
+
 
 bool SERIAL_RUNNING = false;
 
@@ -51,23 +53,30 @@ void serial_onTime(void *arg)
 {
     static struct timeval read_timeout = {5, 0};
 
-    if(devfd == 0)
-        return;
-
     cout << "onTime" << endl;
 
-	//todo: should not make a new Device in timer handler
-    Device* dev = new SONBEST_SD5110B(0x1);
-    //todo: if dev=NULL
-
-    dev->send_cmd(NULL, devfd);
-    //todo: if fail
-
-	//todo: find a way to remove this line	
-	delete dev;
-
+	if(devfd == -1) {			
+		devfd = open(DEVNAME, O_RDWR);        	        
+		if ( devfd == -1 ) {				
+			log_e("%s: Open failed: %s", DEVNAME, strerror(errno));			
+			//todo: led indication			
+			return;
+		} else {                     				
+			log_i("%s: reopen", DEVNAME);                     				
+			selector->set_fd(devfd, READ);                 			
+		}        
+	}         
 
 	memset(devbuf, 0, DEVBUF_SIZE);
+	
+	//write cmd to dev
+    if(false == dev->send_cmd(NULL, devfd)) {
+		log_e("%s: command send failed", DEVNAME);
+		//todo: led indication
+		return;	
+	}
+    
+
 	int r = selector->select(&read_timeout);
     if(-1 == r) {			
 		log_e("select error: %s", strerror(errno));        
@@ -81,11 +90,10 @@ void serial_onTime(void *arg)
 	if(selector->fd_isset(devfd, READ)) {   
 		devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 		if(devbytes <= 0) {
-			cout << DEVNAME << " closed" << endl;
-			//todo: log
+			log_e("%s: closed", DEVNAME);
 			close(devfd);
+			devfd = -1;
 			selector->fd_clr(devfd, READ);
-			//todo: reopen dev			
 		} else {
 			pthread_mutex_lock(&rb_mutex);
 		    rbuffer->put(devbuf, devbytes);
@@ -109,16 +117,22 @@ void* serial_poll_run(void* arg)
 
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
-        log_e("%s: Open failed", DEVNAME);
+        log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
         goto out;
     } 
 
 	selector = new Selector();
     if(NULL == selector) {
         log_e("Selector alloc failed");
-        goto close_dev;
+        goto cleanup;
     }
 	selector->set_fd(devfd, READ);
+
+	dev = new SONBEST_SD5110B(0x1);
+	if(NULL == dev) {
+		log_e("Device alloc failed");
+		goto cleanup;
+	}
 
 #ifdef TRAITS_DEBUG_GW
     cout << "timerlist size = " << tmlist->size() << endl;
@@ -130,13 +144,14 @@ void* serial_poll_run(void* arg)
     }
 #endif
 
-    tmlist->start(); 	//if no pending, it return
+    tmlist->start(); 	//if no pending, just return
 	
 	thr_ret = TRAITSE_THREAD_EXIT_SUCCESS;
 
-close_dev:
-    close(devfd);
-	devfd = -1;
+	delete dev;
+
+cleanup:
+	serial_cleanup();
 out:
 	log_i("serial poll thread exit...");
 
@@ -152,14 +167,16 @@ void* serial_listen_run(void* arg)
 
 	devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) {
-       log_e("%s: Open failed", DEVNAME); 
+       log_e("%s: Open failed: %s", DEVNAME, strerror(errno)); 
+	   //todo: led indication
        goto out;
     } 
 
     selector = new Selector();
     if(NULL == selector) {                   
         log_e("Selector alloc failed");
-        goto close_dev;
+		//todo: led indication
+        goto cleanup;
     }   
     selector->set_fd(devfd, READ);
     
@@ -177,12 +194,23 @@ void* serial_listen_run(void* arg)
 		if(selector->fd_isset(devfd, READ)) {   
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 			if(devbytes <= 0) {
-				cout << DEVNAME << " closed" << endl;
-				//todo: log
+				log_e("%s: closed", DEVNAME);
 				close(devfd);
+				devfd = -1;
 				selector->fd_clr(devfd, READ);
-				break;
-				//todo: reopen dev
+			
+				sleep(5);	//wait for reopen dev
+
+				devfd = open(DEVNAME, O_RDWR);
+			    if ( devfd == -1 ) {
+					log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
+					//todo: led indication
+			        goto cleanup;
+    			} else {
+					log_i("%s: reopen", DEVNAME);
+    				selector->set_fd(devfd, READ);
+				}
+				continue;
 			} else {
 				pthread_mutex_lock(&rb_mutex);
 				rbuffer->put(devbuf, devbytes);
@@ -195,9 +223,8 @@ void* serial_listen_run(void* arg)
 
 	thr_ret = TRAITSE_THREAD_EXIT_SUCCESS;
 
-close_dev:
-    close(devfd);
-	devfd = -1;
+cleanup:
+	serial_cleanup();
 out:    
 	log_i("serial listen thread exit...");
    
