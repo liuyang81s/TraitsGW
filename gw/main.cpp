@@ -119,9 +119,14 @@ int main()
 		log_e("pthread_create failed with %d", rc);
 		goto THREAD_GW_ERROR;
 	}
-	//todo: pthread_timedjoin_np
-	//if t_gw exit abnormal, then goto THREAD_GW_ERROR;
-	//use pthread_timedjoin_np to check	
+	//to check if t_gw thread exit abnormal
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += 2;	//wait for 2s
+	rc = pthread_timedjoin_np(t_gw, NULL, &ts);
+	if(0 != rc) {
+		goto THREAD_GW_ERROR;
+	}
 
     //start serial thread, according uart mode	
     if(UART_POLL == gw->get_uart_mode())
