@@ -21,7 +21,7 @@
 
 #define	CONFIG_PATH "/etc/config/device" 
 #define PACKET_SIZE 256
-#define HB_PERIOD	30	//heartbeat period 30s
+#define HB_PERIOD	(5 * 60)	//heartbeat period 5min
 
 using namespace std;
 

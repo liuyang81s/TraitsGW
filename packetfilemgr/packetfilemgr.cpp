@@ -66,13 +66,15 @@ TRAITScode PacketFileMgr::put_today_record(const string& s)
 	if(TRAITSE_OK != ret)
 		return ret;
 	
+	string s_to_w = "R" + s;
+
 	int fd = fileno(_fp);
 	if(-1 == lockf(fd, F_LOCK, 0)) {
 		log_e("file lock failed before write, %s", strerror(errno));
 		return TRAITSE_FILE_LOCK_FAILED;
 	}
 	
-	if(-1 == write(fd, s.c_str(), s.size())) {
+	if(-1 == write(fd, s_to_w.c_str(), s_to_w.size())) {
 		log_e("file write failed, %s", strerror(errno));
 		return TRAITSE_FILE_WRITE_ERROR;
 	}

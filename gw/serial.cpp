@@ -24,7 +24,7 @@ using namespace std;
 static const char DEVNAME[] = "/dev/ttyS0";
 #else
 //static const char DEVNAME[] = "/dev/tty232";
-//static const char DEVNAME[] = "/dev/tty485";
+static const char DEVNAME[] = "/dev/tty485";
 //static const char DEVNAME[] = "/dev/ttyUSB1";
 //static const char DEVNAME[] = "/dev/ttyUSB0";
 #endif
@@ -52,8 +52,6 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 void serial_onTime(void *arg)
 {
     static struct timeval read_timeout = {5, 0};
-
-    cout << "onTime" << endl;
 
 	if(devfd == -1) {			
 		devfd = open(DEVNAME, O_RDWR);        	        
@@ -92,8 +90,8 @@ void serial_onTime(void *arg)
 		if(devbytes <= 0) {
 			log_e("%s: closed", DEVNAME);
 			close(devfd);
-			devfd = -1;
 			selector->fd_clr(devfd, READ);
+			devfd = -1;
 		} else {
 			pthread_mutex_lock(&rb_mutex);
 		    rbuffer->put(devbuf, devbytes);
@@ -196,8 +194,8 @@ void* serial_listen_run(void* arg)
 			if(devbytes <= 0) {
 				log_e("%s: closed", DEVNAME);
 				close(devfd);
-				devfd = -1;
 				selector->fd_clr(devfd, READ);
+				devfd = -1;
 			
 				sleep(5);	//wait for reopen dev
 
