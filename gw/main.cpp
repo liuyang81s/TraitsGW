@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "traits.h"
 #include "gw.h"
@@ -52,6 +54,31 @@ int main()
     signal(SIGPIPE, SIG_IGN);                        
     signal(SIGTTOU, SIG_IGN);
     signal(SIGTTIN, SIG_IGN); 
+    signal(SIGTERM, SIG_IGN);
+
+	pid_t pid = fork();
+	if(pid < 0) {
+		cout << "fork error" << endl;
+		exit(EXIT_FAILURE);
+	} else if(pid > 0) {
+		exit(EXIT_SUCCESS);
+	}
+
+	setsid();
+
+    char szPath[1024];  
+    if(getcwd(szPath, sizeof(szPath)) == NULL)  
+    {  
+        cout << "getcwd failed" << endl;  
+        exit(EXIT_FAILURE);  
+    }  
+    else  
+    {  
+        chdir(szPath);  
+    }  
+  
+	umask(0);
+
     signal(SIGTERM, sigterm_handler);
 
 	if(ELOG_NO_ERR != init_elog()) {

@@ -1,6 +1,10 @@
 #include <iostream>
-#include <unistd.h>
 #include <string>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "defines.h"
 #include "traits.h"
@@ -10,33 +14,92 @@
 
 using namespace std;
 
+static PacketFileMgr* pfmgr = NULL;
+static HttpTool* htool = NULL;
+
+static void sigterm_handler(int sig)
+{
+    cout << "ReXmit sigterm handler" << endl;
+
+	if(NULL != htool)
+		delete htool;
+	if(NULL != pfmgr)
+		delete pfmgr;
+
+    log_i("ReXmit exit...");
+    close_elog();
+
+    exit(EXIT_SUCCESS);
+}
+
+
 int main()
 {
+    signal(SIGINT, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGQUIT, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN);
+    signal(SIGTERM, SIG_IGN);
+
+    pid_t pid = fork();
+    if(pid < 0) {
+        cout << "fork error" << endl;
+        exit(EXIT_FAILURE);
+    } else if(pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    setsid();
+
+    char szPath[1024];
+    if(getcwd(szPath, sizeof(szPath)) == NULL)
+    {
+        cout << "getcwd failed" << endl;
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        chdir(szPath);
+    }
+
+    umask(0);
+
+	signal(SIGTERM, sigterm_handler);
+
     if(ELOG_NO_ERR != init_elog()) {    
-        cout << "elog init failed" << endl;                                                                           
-        return 0;
+        cout << "ReXmit elog init failed" << endl;                                      
+        exit(EXIT_FAILURE);
     }
         
     log_i("ReXmit starting...");
 
 	TRAITScode ret = TRAITSE_LAST;
-	
-	PacketFileMgr pfmgr;
-    HttpTool htool;
-	
 	string filename;
 	string data_url(SERVER_URL);
 	data_url.append(DATA_URL);
 	
-	ret = pfmgr.set_dir(FILEBUF_PATH);		
+	pfmgr = new PacketFileMgr;
+	if(NULL == pfmgr) {
+		log_e("PacketFileMgr alloc failed");
+		goto PacketFileMgr_ERROR;
+	}
+	
+    htool = new HttpTool;
+	if(NULL == htool) {
+		log_e("HttpTool alloc failed");
+		goto HttpTool_ERROR;
+	}
+	
+	ret = pfmgr->set_dir(FILEBUF_PATH);		
 	if(TRAITSE_OK != ret) {
-		;//todo:log, led indication
-		return 0;		
+		goto SETDIR_ERROR;		
 	}
 
 	while(true) {
 		TRAITS_PF_TIME_TYPE pft_type = TRAITS_PF_INVALID;
-		ret = pfmgr.get_file(filename, &pft_type);
+		ret = pfmgr->get_file(filename, &pft_type);
 		if(TRAITSE_OK != ret) {
 			log_e("get past file failed");
 			break;//todo: led indication
@@ -48,12 +111,12 @@ int main()
 		} else if(TRAITS_PF_PAST == pft_type) {
 			while(true) {
 				string strPost;
-				ret = pfmgr.get_record(strPost);
+				ret = pfmgr->get_record(strPost);
 #if 1
 	cout << "strPost=" << strPost << endl;
 #endif
 				if(TRAITSE_ALL_RECORD_SENT == ret) {
-					pfmgr.delete_file(filename);
+					pfmgr->delete_file(filename);
 					break;
 				} else if (TRAITSE_OK == ret) {
 					if(strPost.empty())
@@ -61,7 +124,7 @@ int main()
 
 					string  strResponse;
 					while(true) { //持续发送，直到成功
-					    htool.Post(data_url, strPost, strResponse);
+					    htool->Post(data_url, strPost, strResponse);
     					if(strResponse.empty()){
 #if 1
 				        	cout << "response empty" << endl;
@@ -71,7 +134,7 @@ int main()
 #if 1
 							cout << "stresponse ok" <<endl;
 #endif
-							pfmgr.update_record();
+							pfmgr->update_record();
 							break;
 						}
 					}	
@@ -83,7 +146,7 @@ int main()
 		} else if(TRAITS_PF_TODAY == pft_type){ //today file
 			cout << "today file processing" << endl;
 			string strPost;
-			ret = pfmgr.get_today_record(strPost);
+			ret = pfmgr->get_today_record(strPost);
 			if(TRAITSE_OK == ret) {
 				if(strPost.empty()) {//读取正常而返回空说明到文件尾
 					sleep(5);		 //等待一段时间后再次检查是否有未发送的报文
@@ -92,7 +155,7 @@ int main()
 				
 				string  strResponse;
 				while(true) { //持续发送，直到成功
-					htool.Post(data_url, strPost, strResponse);
+					htool->Post(data_url, strPost, strResponse);
     				if(strResponse.empty()){
 #if 1
 			    	cout << "response empty" << endl;
@@ -102,7 +165,7 @@ int main()
 #if 1
 						cout << "stresponse ok" <<endl;
 #endif
-						pfmgr.update_record_today();
+						pfmgr->update_record_today();
 						break;
 					}
 				}//while	
@@ -113,9 +176,17 @@ int main()
 		}	
 	}//while
 
-    log_i("ReXmit starting...");
+SETDIR_ERROR:
+	if(NULL != htool)
+		delete htool;
+HttpTool_ERROR:
+	if(NULL != pfmgr)
+		delete pfmgr;
+PacketFileMgr_ERROR:
+    log_i("ReXmit exit...");
+	close_elog();
 
-	return 0;
+    exit(EXIT_SUCCESS);
 }
 
 

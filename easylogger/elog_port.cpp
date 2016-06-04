@@ -36,8 +36,6 @@
 #include <sys/stat.h>       
 #include <sys/types.h>
 
-#include "defines.h"
-
 static pthread_mutex_t output_lock;
 static FILE* fp;
 
@@ -54,7 +52,7 @@ ElogErrCode elog_port_init(void) {
 #ifdef ELOG_TARGET_STDOUT
 	fp = stdout;
 #else
-    if(0 != mkdir(LOG_PATH, 0755)) {
+    if(0 != mkdir(ELOG_PATH, 0755)) {
         if(EEXIST != errno) {
 			perror(strerror(errno));
             return ELOG_DIR_CREATE_ERROR;
@@ -72,8 +70,8 @@ ElogErrCode elog_port_init(void) {
 	char filepath[64];
 	memset(filepath, 0, 64);
 
-	int i = strlen(LOG_PATH);
-	strncpy(filepath, LOG_PATH, i);
+	int i = strlen(ELOG_PATH);
+	strncpy(filepath, ELOG_PATH, i);
 	strncpy(filepath + i, cur, strlen(cur));
 	i += strlen(cur);
 	strncpy(filepath + i, ".log", strlen(".log"));

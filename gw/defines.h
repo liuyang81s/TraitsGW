@@ -12,10 +12,10 @@
 
 #ifndef DEBUG_ON_PC
 #define FILEBUF_PATH	"/mnt/sda1/filebuf/" 
-#define LOG_PATH		"/mnt/sda1/logs/"
+#define ELOG_PATH		"/mnt/sda1/logs/"
 #else
 #define FILEBUF_PATH    "/home/ayang/test/filebuf/"
-#define LOG_PATH		"/home/ayang/test/logs/"
+#define ELOG_PATH		"/home/ayang/test/logs/"
 #endif
 
 #endif
