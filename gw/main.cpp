@@ -71,7 +71,7 @@ int main()
 		goto GW_ERROR;
 	}
 
-	while(false) {
+	while(true) {
 		int init_ret = gw->request_init();
 		if(TRAITSE_OK == init_ret)
 			break;
@@ -119,9 +119,18 @@ int main()
 		log_e("pthread_create failed with %d", rc);
 		goto THREAD_GW_ERROR;
 	}
-	//todo: pthread_timedjoin_np
-	//if t_gw exit abnormal, then goto THREAD_GW_ERROR;
-	//use pthread_timedjoin_np to check	
+#if 0
+	//to check if t_gw thread exit abnormal
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += 10;	//wait for 2s
+	rc = pthread_timedjoin_np(t_gw, NULL, &ts);
+	if(0 != rc) {
+		cout << strerror(rc) << endl; 
+		cout << "t_gw exit:" << strerror(errno) <<endl;
+		goto THREAD_GW_ERROR;
+	}
+#endif
 
     //start serial thread, according uart mode	
     if(UART_POLL == gw->get_uart_mode())

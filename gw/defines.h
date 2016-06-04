@@ -8,11 +8,11 @@
 
 #define TRAITS_TEST
 
-#define DEBUG_ON_PC
+//#define DEBUG_ON_PC
 
 #ifndef DEBUG_ON_PC
 #define FILEBUF_PATH	"/mnt/sda1/filebuf/" 
-#define LOG_PATH		"/mnt/sdb1/logs/"
+#define LOG_PATH		"/mnt/sda1/logs/"
 #else
 #define FILEBUF_PATH    "/home/ayang/test/filebuf/"
 #define LOG_PATH		"/home/ayang/test/logs/"
