@@ -12,6 +12,7 @@
 #include "timer.h"
 #include "timerlist.h"
 #include "traits_elog.h"
+#include "led.h"
 #include "main.h"
 
 using namespace std;
