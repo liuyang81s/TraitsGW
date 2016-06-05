@@ -6,7 +6,9 @@ void led_close();
 inline void led_on();
 inline void led_off();
 void led_flash(int period_ms, int count);
+TRAITScode led_infinitly(int period_ms);
 inline void led_report_success();
+inline void led_error();
 
 #endif
 
