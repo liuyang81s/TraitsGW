@@ -14,6 +14,7 @@
 #include "defines.h"
 #include "httptool.h"
 #include "devs.h"
+#include "led.h"
 #include "serial.h"
 #include "packetfilemgr.h"
 #include "traits_elog.h"
@@ -41,6 +42,8 @@ TraitsGW::TraitsGW(const string& url)
 
 TRAITScode TraitsGW::init()
 {
+	led_ok();
+
 	gage_name.clear();
 	gage_type.clear();
 	gage_no.clear();
@@ -75,13 +78,13 @@ TRAITScode TraitsGW::init()
 	TRAITScode ret = TRAITSE_LAST;
 	ret = tmlist->init();	
 	if(TRAITSE_OK != ret) {
-        //todo: led indication
+		led_error();
 		goto failed;
 	}	
    
 	ret = pfmgr.set_dir(FILEBUF_PATH);    
     if(TRAITSE_OK != ret) {
-        //todo: led indication
+		led_error();
 		goto failed;
     }
 
@@ -148,6 +151,8 @@ string TraitsGW::get_self_id()
 
 TRAITScode TraitsGW::request_init()
 {
+	led_ok();
+
 #ifndef TRAITS_DEBUG
 	//read config file, get gage info 
 	ifstream config_file(CONFIG_PATH);
@@ -222,6 +227,8 @@ TRAITScode TraitsGW::request_init()
 
 TRAITScode TraitsGW::heartbeat()
 {
+	led_ok();
+
 	json_object* hb_object;
     hb_object = json_object_new_object();
     json_object_object_add(hb_object, "id", json_object_new_string(self_id.c_str()));
@@ -262,11 +269,9 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 
 TRAITScode TraitsGW::report(uint8_t *packet, const int size)
 {
-    static string url = server_url + DATA_URL;
+	led_ok();
 
-#if 1
-    cout << "report size = " << size << endl;
-#endif
+    static string url = server_url + DATA_URL;
 
 	static uint8_t packet_str[PACKET_SIZE * 3 + 1];
 	memset(packet_str, 0, PACKET_SIZE * 3 + 1);
@@ -488,7 +493,7 @@ release_json_obj:
     json_object_put(full_obj);
 
     if(TRAITSE_OK != ret || 0 != srv_ret_code){
-        //todo: LED error indication
+		led_error();
         if(0 != srv_ret_code) {
             log_w("server return code = %d", srv_ret_code);
             ret = TRAITSE_OK; //packet parse correctly, so we return true
@@ -539,9 +544,11 @@ TRAITScode TraitsGW::data_response_handler(const string& response)
     json_object_put(temp_obj);
    
     if(0 != srv_ret_code){
+        led_error();
         log_w("server return code = %d", srv_ret_code);
-        ;//todo: LED error indication
     }
+
+	led_report_success();
 
     return TRAITSE_OK;
 }
@@ -586,7 +593,7 @@ TRAITScode TraitsGW::hb_response_handler(const string& response)
         return TRAITSE_OK;
     } else {
         plan_mode = PLAN_INVALID;
-        //todo: led indication
+        led_error();
         log_e("plan_mode invalid: %d", isplan);
         return TRAITSE_OK;
     }

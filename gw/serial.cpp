@@ -11,6 +11,7 @@
 #include "main.h"
 #include "defines.h"
 #include "devs.h"
+#include "led.h"
 #include "timerlist.h"
 #include "traits.h"
 #include "traits_elog.h"
@@ -53,11 +54,13 @@ void serial_onTime(void *arg)
 {
     static struct timeval read_timeout = {5, 0};
 
+	led_ok();
+
 	if(devfd == -1) {			
 		devfd = open(DEVNAME, O_RDWR);        	        
 		if ( devfd == -1 ) {				
+			led_error();
 			log_e("%s: Open failed: %s", DEVNAME, strerror(errno));			
-			//todo: led indication			
 			return;
 		} else {                     				
 			log_i("%s: reopen", DEVNAME);                     				
@@ -69,14 +72,15 @@ void serial_onTime(void *arg)
 	
 	//write cmd to dev
     if(false == dev->send_cmd(NULL, devfd)) {
+		led_error();
 		log_e("%s: command send failed", DEVNAME);
-		//todo: led indication
 		return;	
 	}
     
 
 	int r = selector->select(&read_timeout);
     if(-1 == r) {			
+		led_error();
 		log_e("select error: %s", strerror(errno));        
 	    return;
 	} else if (0 == r) {    //time out            
@@ -88,6 +92,7 @@ void serial_onTime(void *arg)
 	if(selector->fd_isset(devfd, READ)) {   
 		devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 		if(devbytes <= 0) {
+			led_error();
 			log_e("%s: closed", DEVNAME);
 			close(devfd);
 			selector->fd_clr(devfd, READ);
@@ -115,12 +120,14 @@ void* serial_poll_run(void* arg)
 
     devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) { 
+		led_error();
         log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
         goto out;
     } 
 
 	selector = new Selector();
     if(NULL == selector) {
+		led_error();
         log_e("Selector alloc failed");
         goto cleanup;
     }
@@ -165,15 +172,15 @@ void* serial_listen_run(void* arg)
 
 	devfd = open(DEVNAME, O_RDWR);
     if ( devfd == -1 ) {
+	   led_error();
        log_e("%s: Open failed: %s", DEVNAME, strerror(errno)); 
-	   //todo: led indication
        goto out;
     } 
 
     selector = new Selector();
     if(NULL == selector) {                   
+		led_error();
         log_e("Selector alloc failed");
-		//todo: led indication
         goto cleanup;
     }   
     selector->set_fd(devfd, READ);
@@ -201,8 +208,8 @@ void* serial_listen_run(void* arg)
 
 				devfd = open(DEVNAME, O_RDWR);
 			    if ( devfd == -1 ) {
+					led_error();
 					log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
-					//todo: led indication
 			        goto cleanup;
     			} else {
 					log_i("%s: reopen", DEVNAME);

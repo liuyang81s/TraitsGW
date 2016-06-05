@@ -39,8 +39,10 @@ static void sigterm_handler(int sig)
     if(NULL != gw) 
         delete gw; 
 
-    log_i("GW exit...");
+	led_ok();
+	led_close();
 
+    log_i("GW exit...");
     close_elog();   
 
     exit(EXIT_SUCCESS);
@@ -49,6 +51,13 @@ static void sigterm_handler(int sig)
 
 int main()
 {
+	//do led init first
+	if(TRAITSE_OK != led_init()) {
+		exit(EXIT_FAILURE);
+	} else {
+		led_ok();
+	}
+
 	signal(SIGINT, SIG_IGN);
     signal(SIGHUP, SIG_IGN);
     signal(SIGQUIT, SIG_IGN);                
@@ -60,7 +69,7 @@ int main()
 	pid_t pid = fork();
 	if(pid < 0) {
 		cout << "fork error" << endl;
-		exit(EXIT_FAILURE);
+		goto FATAL_OUT;
 	} else if(pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
@@ -71,7 +80,7 @@ int main()
     if(getcwd(szPath, sizeof(szPath)) == NULL)  
     {  
         cout << "getcwd failed" << endl;  
-        exit(EXIT_FAILURE);  
+		goto FATAL_OUT;
     }  
     else  
     {  
@@ -92,7 +101,7 @@ int main()
 	gw = new TraitsGW(SERVER_URL);
 	if(NULL == gw) {
 		log_e("TraitsGW allocation failed");
-		goto FATAL_OUT;
+		goto GW_ALLOC_ERROR;
 	}	
 	if(TRAITSE_OK != gw->init()) {
 		log_e(" TraitsGW init failed");
@@ -109,7 +118,7 @@ int main()
 				TRAITSE_MEM_ALLOC_FAILED == init_ret) {
 			goto GW_ERROR;
 		} else {
-			//todo: led indication
+			led_error();
 			sleep(3);
 		}
 	}
@@ -219,18 +228,14 @@ GW_ERROR:
 		gw = NULL;
 	}
 	
-FATAL_OUT:
-	while(true) {
-		//TODO:LED indication
-#if 1
-cout << "flash led" <<endl;
-#endif
-        sleep(5);
-	}
-
+GW_ALLOC_ERROR:
 	log_i("GW exit...");
 
 	close_elog();	
+
+FATAL_OUT:
+	led_error();
+	led_close();
 
 	return 0;
 }

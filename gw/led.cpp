@@ -1,13 +1,14 @@
 #include <iostream>
 #include <string>
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "traits.h"
-#include "traits_elog.h"
 
 using namespace std;
 
@@ -28,11 +29,13 @@ static char trigger_on[] = "default-on";
 
 TRAITScode led_init()
 {
-	string trigger_path = string(LED_PATH) + string(TRIGGER_PATH);
+	if(-1 != trigger_fd)
+		return TRAITSE_OK;	
 
+	string trigger_path = string(LED_PATH) + string(TRIGGER_PATH);
+ 
 	trigger_fd = open(trigger_path.c_str(), O_RDWR);	
 	if(-1 == trigger_fd) {
-		log_e("%s open failed", trigger_path.c_str());
 		return TRAITSE_FILE_OPEN_FAILED;
 	}
 	
@@ -45,16 +48,30 @@ void led_close()
 		close(trigger_fd);
 		trigger_fd = -1;
 	}
+	
+	if(-1 != delay_on_fd) {
+		close(delay_on_fd);
+		delay_on_fd = -1;
+	}
+
+	if(-1 != delay_off_fd) {
+		close(delay_off_fd);
+		delay_off_fd = -1;
+	}
 }
 
 
 inline void led_on()
 {
+	assert(-1 != trigger_fd);
+
 	write(trigger_fd, trigger_on, sizeof(trigger_on));
 }
 
 inline void led_off()
 {
+	assert(-1 != trigger_fd);
+
 	write(trigger_fd, trigger_none, sizeof(trigger_none));
 }
 
@@ -81,23 +98,27 @@ void led_flash(int period_ms, int count)
 
 TRAITScode led_infinitly(int period_ms)
 {
+	assert(-1 != trigger_fd);
+
 	if(period_ms <= 0)
 		return TRAITSE_ARG_INVALID;
 
 	write(trigger_fd, trigger_timer, sizeof(trigger_timer));
-	
-	string delay_on_path = string(LED_PATH) + string(DELAY_ON_PATH);
-	delay_on_fd = open(delay_on_path.c_str(), O_RDWR);	
-	if(-1 == delay_on_fd) {
-		log_e("%s open failed", delay_on_path.c_str());
-		return TRAITSE_FILE_OPEN_FAILED;
+
+	if(-1 == delay_on_fd) {	
+		string delay_on_path = string(LED_PATH) + string(DELAY_ON_PATH);
+		delay_on_fd = open(delay_on_path.c_str(), O_RDWR);	
+		if(-1 == delay_on_fd) {
+			return TRAITSE_FILE_OPEN_FAILED;
+		}
 	}
-	
-	string delay_off_path = string(LED_PATH) + string(DELAY_OFF_PATH);
-	delay_off_fd = open(delay_off_path.c_str(), O_RDWR);	
+
 	if(-1 == delay_off_fd) {
-		log_e("%s open failed", delay_off_path.c_str());
-		return TRAITSE_FILE_OPEN_FAILED;
+		string delay_off_path = string(LED_PATH) + string(DELAY_OFF_PATH);
+		delay_off_fd = open(delay_off_path.c_str(), O_RDWR);	
+		if(-1 == delay_off_fd) {
+			return TRAITSE_FILE_OPEN_FAILED;
+		}
 	}
 
 	char str[16];
@@ -106,20 +127,26 @@ TRAITScode led_infinitly(int period_ms)
 
 	write(delay_on_fd, str, sizeof(str));
 	write(delay_off_fd, str, sizeof(str));
+
+	return TRAITSE_OK;
 }
 
 
-inline void led_report_success()
+void led_report_success()
 {
 #define REPORT_SUCC_PERIOD 500
 #define REPORT_SUCC_COUNT 3
 	led_flash(REPORT_SUCC_PERIOD, REPORT_SUCC_COUNT);
 }
 
-inline void led_error()
+void led_error()
 {
-#define LED_ERROR_PERIOD 500
+#define LED_ERROR_PERIOD 150
 	led_infinitly(LED_ERROR_PERIOD);
 }
 
+void led_ok()
+{
+	led_off();
+}
 
