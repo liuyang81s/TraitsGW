@@ -52,6 +52,7 @@ public:
 	TRAITScode heartbeat();
 	TRAITScode report(uint8_t *packet, const int size);
 
+	string get_port() const;
     UART_MODE get_uart_mode() const;
     SEND_TYPE get_send_type() const;
     PROTO_TYPE get_proto_type() const;
@@ -73,6 +74,7 @@ protected:
 
 	string self_id;
 	string server_url;
+	string port;
 	UART_MODE uart_mode;
 	SEND_TYPE send_type;
     PROTO_TYPE proto;

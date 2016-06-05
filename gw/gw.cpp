@@ -26,9 +26,10 @@
 
 using namespace std;
 
+static string get_attr_from_line(const string& line);
+
 bool GW_RUNNING = false;
 bool HB_RUNNING = false;
-
 
 TraitsGW::TraitsGW()
 {
@@ -49,6 +50,7 @@ TRAITScode TraitsGW::init()
 	gage_no.clear();
 	vendor.clear();
 	self_id.clear();
+	port.clear();
     
     uart_mode = UART_INVALID;
     send_type = SEND_INVALID;
@@ -69,6 +71,27 @@ TRAITScode TraitsGW::init()
     plan_mode = PLAN_NONE;
 #endif
 
+	//read config file, get port info 
+	ifstream config_file(CONFIG_PATH);
+	if(!config_file) {
+	    log_e("%s not found", CONFIG_PATH);
+		return TRAITSE_CONFIG_FILE_NOT_FOUND;	
+	}
+
+	string line;
+    while(!config_file.eof()){
+		getline(config_file, line);
+		if(string::npos != line.find("port")) {
+			port = get_attr_from_line(line);
+			break;
+		}
+	}  			
+#ifdef TRAITS_DEBUG_GW
+	cout << "port = " << port << endl;	
+#endif
+	if(port.empty())	
+		return TRAITSE_CONFIG_PARAM_NOT_FOUND;
+
 	tmlist = new TimerList();
 	if(NULL == tmlist) {
 		log_e("TimerList alloction failed");
@@ -78,13 +101,11 @@ TRAITScode TraitsGW::init()
 	TRAITScode ret = TRAITSE_LAST;
 	ret = tmlist->init();	
 	if(TRAITSE_OK != ret) {
-		led_error();
 		goto failed;
 	}	
    
 	ret = pfmgr.set_dir(FILEBUF_PATH);    
     if(TRAITSE_OK != ret) {
-		led_error();
 		goto failed;
     }
 
@@ -314,6 +335,11 @@ TRAITScode TraitsGW::report(uint8_t *packet, const int size)
         log_d("dataResponse=%s", strResponse.c_str());
 		return data_response_handler(strResponse);
 	}
+}
+
+string TraitsGW::get_port() const
+{
+	return port;
 }
 
 UART_MODE TraitsGW::get_uart_mode() const

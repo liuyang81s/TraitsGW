@@ -171,9 +171,9 @@ int main()
 
     //start serial thread, according uart mode	
     if(UART_POLL == gw->get_uart_mode())
-        rc = pthread_create(&t_serial, NULL, serial_poll_run, gw->get_timerlist());
+        rc = pthread_create(&t_serial, NULL, serial_poll_run, gw);
     else if(UART_LISTEN == gw->get_uart_mode())
-        rc = pthread_create(&t_serial, NULL, serial_listen_run, NULL);
+        rc = pthread_create(&t_serial, NULL, serial_listen_run, gw);
     else {
 		log_e("invalid uart_mode %d", (int)(gw->get_uart_mode()));
         goto THREAD_SERIAL_ERROR;

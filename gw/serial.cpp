@@ -9,6 +9,7 @@
 #include "selector.h"
 #include "serial.h"
 #include "main.h"
+#include "gw.h"
 #include "defines.h"
 #include "devs.h"
 #include "led.h"
@@ -21,15 +22,7 @@
 
 using namespace std;
 
-#ifdef DEBUG_ON_PC
-static const char DEVNAME[] = "/dev/ttyS0";
-#else
-//static const char DEVNAME[] = "/dev/tty232";
-static const char DEVNAME[] = "/dev/tty485";
-//static const char DEVNAME[] = "/dev/ttyUSB1";
-//static const char DEVNAME[] = "/dev/ttyUSB0";
-#endif
-
+static string port = "";
 static uint8_t devbuf[DEVBUF_SIZE];
 static int devfd = -1;
 static Selector* selector = NULL;
@@ -57,13 +50,13 @@ void serial_onTime(void *arg)
 	led_ok();
 
 	if(devfd == -1) {			
-		devfd = open(DEVNAME, O_RDWR);        	        
+		devfd = open(port.c_str(), O_RDWR);        	        
 		if ( devfd == -1 ) {				
 			led_error();
-			log_e("%s: Open failed: %s", DEVNAME, strerror(errno));			
+			log_e("%s: Open failed: %s", port.c_str(), strerror(errno));			
 			return;
 		} else {                     				
-			log_i("%s: reopen", DEVNAME);                     				
+			log_i("%s: reopen", port.c_str());                     				
 			selector->set_fd(devfd, READ);                 			
 		}        
 	}         
@@ -73,7 +66,7 @@ void serial_onTime(void *arg)
 	//write cmd to dev
     if(false == dev->send_cmd(NULL, devfd)) {
 		led_error();
-		log_e("%s: command send failed", DEVNAME);
+		log_e("%s: command send failed", port.c_str());
 		return;	
 	}
     
@@ -93,7 +86,7 @@ void serial_onTime(void *arg)
 		devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 		if(devbytes <= 0) {
 			led_error();
-			log_e("%s: closed", DEVNAME);
+			log_e("%s: closed", port.c_str());
 			close(devfd);
 			selector->fd_clr(devfd, READ);
 			devfd = -1;
@@ -102,7 +95,7 @@ void serial_onTime(void *arg)
 		    rbuffer->put(devbuf, devbytes);
 	        pthread_cond_signal(&rb_cond);
             pthread_mutex_unlock(&rb_mutex);                
-			dev_log(DEVNAME, devbuf, devbytes);				
+			dev_log(port.c_str(), devbuf, devbytes);				
 		}
 	} 
 } 
@@ -116,12 +109,14 @@ void* serial_poll_run(void* arg)
 #ifdef TRAITS_DEBUG_GW
     list<Timer*>::iterator it;                                                                        
 #endif
-    TimerList* tmlist = (TimerList*)arg;
+	TraitsGW* gw = (TraitsGW*)arg;
+    TimerList* tmlist = gw->get_timerlist();
+	port = gw->get_port();
 
-    devfd = open(DEVNAME, O_RDWR);
+    devfd = open(port.c_str(), O_RDWR);
     if ( devfd == -1 ) { 
 		led_error();
-        log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
+        log_e("%s: Open failed: %s", port.c_str(), strerror(errno));
         goto out;
     } 
 
@@ -169,11 +164,14 @@ void* serial_listen_run(void* arg)
 	log_i("serial listen thread running...");	
 
 	thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
+	
+	TraitsGW* gw = (TraitsGW*)arg;
+	port = gw->get_port();
 
-	devfd = open(DEVNAME, O_RDWR);
+	devfd = open(port.c_str(), O_RDWR);
     if ( devfd == -1 ) {
 	   led_error();
-       log_e("%s: Open failed: %s", DEVNAME, strerror(errno)); 
+       log_e("%s: Open failed: %s", port.c_str(), strerror(errno)); 
        goto out;
     } 
 
@@ -199,20 +197,20 @@ void* serial_listen_run(void* arg)
 		if(selector->fd_isset(devfd, READ)) {   
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
 			if(devbytes <= 0) {
-				log_e("%s: closed", DEVNAME);
+				log_e("%s: closed", port.c_str());
 				close(devfd);
 				selector->fd_clr(devfd, READ);
 				devfd = -1;
 			
 				sleep(5);	//wait for reopen dev
 
-				devfd = open(DEVNAME, O_RDWR);
+				devfd = open(port.c_str(), O_RDWR);
 			    if ( devfd == -1 ) {
 					led_error();
-					log_e("%s: Open failed: %s", DEVNAME, strerror(errno));
+					log_e("%s: Open failed: %s", port.c_str(), strerror(errno));
 			        goto cleanup;
     			} else {
-					log_i("%s: reopen", DEVNAME);
+					log_i("%s: reopen", port.c_str());
     				selector->set_fd(devfd, READ);
 				}
 				continue;
@@ -221,7 +219,7 @@ void* serial_listen_run(void* arg)
 				rbuffer->put(devbuf, devbytes);
 				pthread_cond_signal(&rb_cond);
 				pthread_mutex_unlock(&rb_mutex);
-				dev_log(DEVNAME, devbuf, devbytes);				
+				dev_log(port.c_str(), devbuf, devbytes);				
 			}
         } 
 	}
