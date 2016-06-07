@@ -58,7 +58,7 @@ TRAITScode TraitsGW::init()
     plan_mode = PLAN_INVALID;
     collect_cycle = 0;
 
-#ifdef TRAITS_DEBUG
+#ifdef TRAITS_DEBUG_SRV
 	gage_name = "wenduji";	
 	vendor = "sanfeng";
 	gage_type = "1";
@@ -174,7 +174,7 @@ TRAITScode TraitsGW::request_init()
 {
 	led_ok();
 
-#ifndef TRAITS_DEBUG
+#ifndef TRAITS_DEBUG_SRV
 	//read config file, get gage info 
 	ifstream config_file(CONFIG_PATH);
 	if(!config_file) {
@@ -209,7 +209,7 @@ TRAITScode TraitsGW::request_init()
 		||gage_type.empty() || gage_no.empty())
 		return TRAITSE_CONFIG_PARAM_NOT_FOUND;
 
-#ifndef TRAITS_DEBUG
+#ifndef TRAITS_DEBUG_SRV
 	self_id = get_self_id();
 #endif
 #ifdef TRAITS_DEBUG_GW
