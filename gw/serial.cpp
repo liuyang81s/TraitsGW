@@ -45,7 +45,7 @@ void dev_log(const char* prefix, uint8_t *buf, int size)
 
 void serial_onTime(void *arg)
 {
-    static struct timeval read_timeout = {5, 0};
+    static struct timeval read_timeout = {3, 0};
 
 	led_ok();
 
@@ -69,34 +69,44 @@ void serial_onTime(void *arg)
 		log_e("%s: command send failed", port.c_str());
 		return;	
 	}
-    
 
-	int r = selector->select(&read_timeout);
-    if(-1 == r) {			
-		led_error();
-		log_e("select error: %s", strerror(errno));        
-	    return;
-	} else if (0 == r) {    //time out            
-		log_w("select read timeout");
-        return;
-    }
-		
-	int devbytes = 0;		
-	if(selector->fd_isset(devfd, READ)) {   
-		devbytes = read(devfd, devbuf, DEVBUF_SIZE);
-		if(devbytes <= 0) {
+	while(true) {
+		int r = selector->select(&read_timeout);
+    	if(-1 == r) {			
 			led_error();
-			log_e("%s: closed", port.c_str());
-			close(devfd);
-			selector->fd_clr(devfd, READ);
-			devfd = -1;
-		} else {
-			pthread_mutex_lock(&rb_mutex);
-		    rbuffer->put(devbuf, devbytes);
-	        pthread_cond_signal(&rb_cond);
-            pthread_mutex_unlock(&rb_mutex);                
-			dev_log(port.c_str(), devbuf, devbytes);				
+			log_e("select error: %s", strerror(errno));        
+	    	return;
+		} else if (0 == r) {    //time out
+								//error or
+								//completion for non-fixed length packet            
+			//log_w("select read timeout");
+        	break;
+    	}
+		
+		int total = 0;
+		int devbytes = 0;		
+		if(selector->fd_isset(devfd, READ)) {   
+			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
+			if(devbytes <= 0) {
+				led_error();
+				log_e("%s: closed", port.c_str());
+				close(devfd);
+				selector->fd_clr(devfd, READ);
+				devfd = -1;
+				break;
+			} else {
+				total += devbytes;
+				pthread_mutex_lock(&rb_mutex);
+			    rbuffer->put(devbuf, devbytes);
+		        pthread_cond_signal(&rb_cond);
+        	    pthread_mutex_unlock(&rb_mutex);                
+				dev_log(port.c_str(), devbuf, devbytes);				
+			}
 		}
+		
+		if((dev->get_packet_size() > 0) &&
+			(total >= dev->get_packet_size()))
+			break;
 	} 
 } 
 

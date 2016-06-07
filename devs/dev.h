@@ -26,7 +26,12 @@ public:
 	 * 返回值：0,无完整报文;>0,报文长度
 	 */
 	virtual int recognize_packet(uint8_t* buf, int size) = 0;
-	
+
+	/*
+	 * -1 for non-fixed length
+	 */	
+	virtual int get_packet_size() = 0;
+
 protected:
 	string dev_name;
 	string vendor;
@@ -48,11 +53,11 @@ public:
 	
     bool send_cmd(uint8_t* cmd, int fd) { return true; }
 	int recognize_packet(uint8_t* buf, int size) { return 1; }
+	int get_packet_size() {return 1; }
 
 protected:
 
 };
 
 #endif
-
 

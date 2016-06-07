@@ -16,6 +16,7 @@ public:
 
     bool send_cmd(uint8_t* cmd, int fd);
     int recognize_packet(uint8_t* buf, int size);
+	int get_packet_size();
 
 	const static int DATA_PACKET_SIZE;
 

@@ -95,3 +95,8 @@ int SONBEST_SD5110B::recognize_packet(uint8_t* buf, int size)
     return 9;
 }
 
+int SONBEST_SD5110B::get_packet_size()
+{
+	return DATA_PACKET_SIZE;
+}
+
