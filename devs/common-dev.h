@@ -7,13 +7,16 @@
 class CommonDev : public Device
 {
 public:
-    CommonDev();
-    virtual ~CommonDev();
+	static CommonDev* instance();
 
     bool send_cmd(uint8_t* cmd, int size, int fd);
     int recognize_packet(uint8_t* buf, int size);
 
 protected:
+    CommonDev();
+    virtual ~CommonDev();
+
+	static CommonDev* p_instance;
 };
 
 

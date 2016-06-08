@@ -139,7 +139,7 @@ void* serial_poll_run(void* arg)
     }
 	selector->set_fd(devfd, READ);
 
-	dev = new CommonDev();
+	dev = CommonDev::instance();
 	if(NULL == dev) {
 		log_e("Device alloc failed");
 		goto cleanup;

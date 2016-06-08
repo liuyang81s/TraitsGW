@@ -6,6 +6,8 @@
 
 using namespace std;
 
+CommonDev* CommonDev::p_instance = 0;
+
 CommonDev::CommonDev()
 {
 
@@ -14,6 +16,16 @@ CommonDev::CommonDev()
 CommonDev::~CommonDev()
 {
 
+}
+
+CommonDev* CommonDev::instance()
+{
+	if(NULL == p_instance) {
+		static CommonDev instance;
+		p_instance = &instance;
+	}
+
+	return p_instance;
 }
 
 bool CommonDev::send_cmd(uint8_t* cmd, int size, int fd)

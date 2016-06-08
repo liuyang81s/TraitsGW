@@ -793,16 +793,12 @@ void* gw_run(void* arg)
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
-	Device* dev = new CommonDev();
+	Device* dev = CommonDev::instance();
 	if(NULL == dev) {
 		log_e("dev alloc failed");
 		goto out;
 	}
 	dev->set_packet_size(gw->get_recv_len());
-
-#if 1
-    cout << __FILE__ << " " << __LINE__ << endl;
-#endif
 
 	GW_RUNNING = true;
 	while(GW_RUNNING) {
