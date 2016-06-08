@@ -362,6 +362,16 @@ PLAN_MODE TraitsGW::get_plan_mode() const
     return plan_mode;
 }
 
+string TraitsGW::get_send_content() const
+{
+    return send_content;
+}
+
+int TraitsGW::get_recv_len() const
+{
+    return recv_len;
+}
+
 TimerList* TraitsGW::get_timerlist() const
 {
     return tmlist;
@@ -380,7 +390,7 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     }
 
 	TRAITScode ret = TRAITSE_OK;
-    string send_content;
+
     int is_listen;
     int stype;
     int isplan;
@@ -449,7 +459,15 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     //parse 'sendContent'
     json_object_object_get_ex(full_obj, "sendContent", &temp_obj);
     send_content = json_object_get_string(temp_obj);
-      
+	      
+#if 0
+    //parse 'sendContent'
+    json_object_object_get_ex(full_obj, "recvLen", &temp_obj);
+    recv_len = json_object_get_int(temp_obj);
+#else
+	recv_len = 9;
+#endif
+
     //parse 'isPlan'
     json_object_object_get_ex(full_obj, "isPlan", &temp_obj);
     isplan = json_object_get_int(temp_obj);
@@ -678,11 +696,12 @@ void* gw_run(void* arg)
 
 	TraitsGW* gw = (TraitsGW*)arg;
 
-	Device* dev = new SONBEST_SD5110B(0x1);
+	Device* dev = new CommonDev();
 	if(NULL == dev) {
 		log_e("dev alloc failed");
 		goto out;
 	}
+	dev->set_packet_size(gw->get_recv_len());
 
 	GW_RUNNING = true;
 	while(GW_RUNNING) {

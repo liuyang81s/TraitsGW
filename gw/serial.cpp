@@ -28,7 +28,8 @@ static int devfd = -1;
 static Selector* selector = NULL;
 static TRAITScode thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
 static Device* dev = NULL;
-
+uint8_t* cmd = NULL;
+int cmd_len = 0;
 
 bool SERIAL_RUNNING = false;
 
@@ -64,7 +65,7 @@ void serial_onTime(void *arg)
 	memset(devbuf, 0, DEVBUF_SIZE);
 	
 	//write cmd to dev
-    if(false == dev->send_cmd(NULL, devfd)) {
+    if(false == dev->send_cmd(cmd, cmd_len, devfd)) {
 		led_error();
 		log_e("%s: command send failed", port.c_str());
 		return;	
@@ -138,11 +139,15 @@ void* serial_poll_run(void* arg)
     }
 	selector->set_fd(devfd, READ);
 
-	dev = new SONBEST_SD5110B(0x1);
+	dev = new CommonDev();
 	if(NULL == dev) {
 		log_e("Device alloc failed");
 		goto cleanup;
 	}
+	dev->set_packet_size(gw->get_recv_len());
+
+	cmd = (uint8_t*)((gw->get_send_content()).c_str());
+	cmd_len = (gw->get_send_content()).length();
 
 #ifdef TRAITS_DEBUG_GW
     cout << "timerlist size = " << tmlist->size() << endl;

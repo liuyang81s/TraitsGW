@@ -16,10 +16,10 @@ typedef enum {
 class Device
 {
 public:
-	Device() { }
+	Device() { packet_size = -1; }
 	virtual ~Device() { }
     
-    virtual bool send_cmd(uint8_t* cmd, int fd) = 0; 
+    virtual bool send_cmd(uint8_t* cmd, int size, int fd) = 0; 
 	/* 识别缓存中一帧完整报文
 	 * buf - 缓存地址
 	 * szie - 缓存有效字节数
@@ -30,7 +30,8 @@ public:
 	/*
 	 * -1 for non-fixed length
 	 */	
-	virtual int get_packet_size() = 0;
+	virtual int get_packet_size() { return packet_size; }
+	virtual void set_packet_size(int size) { packet_size = size; }
 
 protected:
 	string dev_name;
@@ -43,6 +44,8 @@ protected:
 	int databits;
 	int stopbits;
 	PARITY_MODE parity;
+
+	int packet_size;
 };
 
 class TestDevice : public Device
@@ -51,7 +54,7 @@ public:
 	TestDevice() { }
 	virtual ~TestDevice() { }
 	
-    bool send_cmd(uint8_t* cmd, int fd) { return true; }
+    bool send_cmd(uint8_t* cmd, int size, int fd) { return true; }
 	int recognize_packet(uint8_t* buf, int size) { return 1; }
 	int get_packet_size() {return 1; }
 

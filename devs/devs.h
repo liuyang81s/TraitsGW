@@ -2,6 +2,7 @@
 #define TRAITS_DEVS_H
 
 #include "dev.h"
+#include "common-dev.h"
 #include "sonbest-SD5110B.h"
 
 #endif

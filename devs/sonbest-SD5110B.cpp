@@ -42,7 +42,7 @@ void SONBEST_SD5110B::set_addr(const uint8_t addr)
     _addr = addr;
 }
 
-bool SONBEST_SD5110B::send_cmd(uint8_t* cmd, int fd)
+bool SONBEST_SD5110B::send_cmd(uint8_t* cmd, int size, int fd)
 {
     if(0 >= fd)
         return false;

@@ -14,7 +14,7 @@ public:
     uint8_t get_addr() const;
     void set_addr(const uint8_t addr);
 
-    bool send_cmd(uint8_t* cmd, int fd);
+    bool send_cmd(uint8_t* cmd, int size, int fd);
     int recognize_packet(uint8_t* buf, int size);
 	int get_packet_size();
 

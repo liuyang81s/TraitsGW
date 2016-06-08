@@ -57,6 +57,8 @@ public:
     SEND_TYPE get_send_type() const;
     PROTO_TYPE get_proto_type() const;
     PLAN_MODE get_plan_mode() const;
+    string get_send_content() const;
+    int get_recv_len() const;
 	TimerList* get_timerlist() const;		
 
 protected:
@@ -78,6 +80,9 @@ protected:
 	UART_MODE uart_mode;
 	SEND_TYPE send_type;
     PROTO_TYPE proto;
+
+	string send_content;
+	int recv_len;
 
     PLAN_MODE plan_mode;
 	TimerList* tmlist;		
