@@ -10,7 +10,6 @@
 
 using namespace std;
 
-
 extern bool GW_RUNNING;
 extern bool HB_RUNNING;
 
@@ -39,6 +38,8 @@ typedef enum{
 }PLAN_MODE;
 
 
+#define DEV_CMD_SIZE 128
+
 class TraitsGW
 {
 public:
@@ -57,7 +58,8 @@ public:
     SEND_TYPE get_send_type() const;
     PROTO_TYPE get_proto_type() const;
     PLAN_MODE get_plan_mode() const;
-    string get_send_content() const;
+    uint8_t* get_dev_cmd();
+    int get_dev_cmd_len() const;
     int get_recv_len() const;
 	TimerList* get_timerlist() const;		
 
@@ -81,7 +83,8 @@ protected:
 	SEND_TYPE send_type;
     PROTO_TYPE proto;
 
-	string send_content;
+	uint8_t dev_cmd[DEV_CMD_SIZE];
+	int dev_cmd_len;
 	int recv_len;
 
     PLAN_MODE plan_mode;

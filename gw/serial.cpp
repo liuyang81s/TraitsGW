@@ -28,8 +28,8 @@ static int devfd = -1;
 static Selector* selector = NULL;
 static TRAITScode thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
 static Device* dev = NULL;
-uint8_t* cmd = NULL;
-int cmd_len = 0;
+static uint8_t* cmd = NULL;
+static int cmd_len = 0;
 
 bool SERIAL_RUNNING = false;
 
@@ -146,8 +146,8 @@ void* serial_poll_run(void* arg)
 	}
 	dev->set_packet_size(gw->get_recv_len());
 
-	cmd = (uint8_t*)((gw->get_send_content()).c_str());
-	cmd_len = (gw->get_send_content()).length();
+	cmd = gw->get_dev_cmd();
+	cmd_len = gw->get_dev_cmd_len();
 
 #ifdef TRAITS_DEBUG_GW
     cout << "timerlist size = " << tmlist->size() << endl;

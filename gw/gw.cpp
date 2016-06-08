@@ -27,6 +27,7 @@
 using namespace std;
 
 static string get_attr_from_line(const string& line);
+static void rbuffer_log(const char* prefix, uint8_t *buf, int size);
 
 bool GW_RUNNING = false;
 bool HB_RUNNING = false;
@@ -57,6 +58,10 @@ TRAITScode TraitsGW::init()
     proto = PROTO_INVALID;
     plan_mode = PLAN_INVALID;
     collect_cycle = 0;
+
+	memset(dev_cmd, 0, DEV_CMD_SIZE);
+	dev_cmd_len = 0;
+	recv_len = 0;
 
 #ifdef TRAITS_DEBUG_SRV
 	gage_name = "wenduji";	
@@ -279,7 +284,7 @@ static void hex2str(uint8_t* str, uint8_t* hex, int size)
 {
     int i = 0;
 	for(i = 0; i < size; i++) {
-        if(hex[i] <= 9)
+        if(hex[i] <= 0xf)
 		    sprintf((char*)str + i * 3, "0%x ", hex[i]);
         else
     		sprintf((char*)str + i * 3, "%2x ", hex[i]);
@@ -362,9 +367,14 @@ PLAN_MODE TraitsGW::get_plan_mode() const
     return plan_mode;
 }
 
-string TraitsGW::get_send_content() const
+uint8_t* TraitsGW::get_dev_cmd()
 {
-    return send_content;
+    return dev_cmd;
+}
+
+int TraitsGW::get_dev_cmd_len() const
+{
+    return dev_cmd_len;
 }
 
 int TraitsGW::get_recv_len() const
@@ -375,6 +385,73 @@ int TraitsGW::get_recv_len() const
 TimerList* TraitsGW::get_timerlist() const
 {
     return tmlist;
+}
+
+static bool c2hex(const char* str, uint8_t* hex, int size)
+{
+    uint8_t v = 0;
+    char hi = 0;
+    char lo = 0;
+
+    if(size == 2) {
+        hi = toupper(str[0]);
+        lo = toupper(str[1]);
+    } else {
+        lo = toupper(str[0]);
+    }
+
+    if(size == 2) {
+        if(hi >= '0' && hi <= '9')
+            v = hi - '0';
+        else if(hi >= 'A' && hi <= 'F')
+            v = hi - 'A' + 10;
+        else {
+            cout << "hi invalid" << endl;
+            return false;
+        }
+        v *= 16;
+    }
+
+    if(lo >= '0' && lo <= '9')
+        v += lo - '0';
+    else if(lo >= 'A' && lo <= 'F')
+        v += (lo - 'A' + 10);
+    else {
+        cout << "lo invalid" << endl;
+        return false;
+    }
+
+    *hex = v;
+
+    return true;
+}
+
+static int str2hex(const char* str, uint8_t* hex, int size)
+{
+    if(NULL == str || NULL == hex || size <= 0)
+        return -1;
+
+    char* pch = NULL;
+    char* temp = (char*)str;
+    int len = 0;
+    int count = 0;
+    for(int i = 0; i < size; i+=3) {
+        if((i + 3) >= size) {
+            pch = strchr(temp, '\0');
+        }
+        else
+            pch = strchr(temp, ' ');
+        len = pch - temp + 1;
+        if(len != 3 && len != 2)
+            return -1;
+        if(false == c2hex(temp, hex++, len - 1))
+            return -1;
+
+        temp = pch + 1;
+        ++count;
+    }
+
+    return count;
 }
 
 TRAITScode TraitsGW::init_response_handler(const string& response)
@@ -390,7 +467,8 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     }
 
 	TRAITScode ret = TRAITSE_OK;
-
+	
+	string send_content;
     int is_listen;
     int stype;
     int isplan;
@@ -459,8 +537,27 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     //parse 'sendContent'
     json_object_object_get_ex(full_obj, "sendContent", &temp_obj);
     send_content = json_object_get_string(temp_obj);
-	      
-#if 0
+	if(UART_POLL == uart_mode) {
+		if(send_content.length() <= 0) {
+			log_e("isListen = poll, but sendContent is empty");
+			ret = TRAITSE_RESPONSE_CONTENT_ERROR;
+			goto release_json_obj;
+		} else {
+			memset(dev_cmd, 0, DEV_CMD_SIZE);
+			//假定send_content长度不大于DEV_CMD_SIZE
+			int cmd_len = str2hex(send_content.c_str(), dev_cmd, send_content.length());	
+			if(cmd_len <= 0) {
+				log_e("sendContent invalid: %s", send_content.c_str());
+				ret = TRAITSE_RESPONSE_CONTENT_ERROR;
+				goto release_json_obj;
+			} else {
+				dev_cmd_len = cmd_len;
+				rbuffer_log("dev_cmd", dev_cmd, dev_cmd_len);
+			}
+		}
+	}
+      
+#if 0 //预先假定，服务器端尚未实现该字段
     //parse 'sendContent'
     json_object_object_get_ex(full_obj, "recvLen", &temp_obj);
     recv_len = json_object_get_int(temp_obj);
@@ -702,6 +799,10 @@ void* gw_run(void* arg)
 		goto out;
 	}
 	dev->set_packet_size(gw->get_recv_len());
+
+#if 1
+    cout << __FILE__ << " " << __LINE__ << endl;
+#endif
 
 	GW_RUNNING = true;
 	while(GW_RUNNING) {
