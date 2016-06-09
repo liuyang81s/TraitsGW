@@ -60,6 +60,6 @@ int CommonDev::recognize_packet(uint8_t* buf, int size)
 	if(packet_size > 0)
 	    return packet_size;	//fixed length packet
 	else
-		return 1;	//non-fixed length packet
+		return size;	//non-fixed length packet, get all bytes of the buf
 }
 

@@ -562,8 +562,8 @@ TRAITScode TraitsGW::init_response_handler(const string& response)
     json_object_object_get_ex(full_obj, "recvLen", &temp_obj);
     recv_len = json_object_get_int(temp_obj);
 #else
-	//recv_len = 9;
-	recv_len = 0;
+	//recv_len = 9;	//fixed length
+	recv_len = 0; //non-fixed length
 #endif
 	if(recv_len <= 0)
 		recv_len = -1;

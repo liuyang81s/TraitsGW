@@ -24,6 +24,7 @@ using namespace std;
 
 static string port = "";
 static uint8_t devbuf[DEVBUF_SIZE];
+static uint8_t totalbuf[DEVBUF_SIZE * 2];
 static int devfd = -1;
 static Selector* selector = NULL;
 static TRAITScode thr_ret = TRAITSE_THREAD_EXIT_ABNORMAL; 
@@ -63,6 +64,7 @@ void serial_onTime(void *arg)
 	}         
 
 	memset(devbuf, 0, DEVBUF_SIZE);
+	memset(totalbuf, 0, DEVBUF_SIZE * 2);
 	
 	//write cmd to dev
     if(false == dev->send_cmd(cmd, cmd_len, devfd)) {
@@ -71,6 +73,7 @@ void serial_onTime(void *arg)
 		return;	
 	}
 
+	int total = 0;
 	while(true) {
 		int r = selector->select(&read_timeout);
     	if(-1 == r) {			
@@ -84,7 +87,6 @@ void serial_onTime(void *arg)
         	break;
     	}
 		
-		int total = 0;
 		int devbytes = 0;		
 		if(selector->fd_isset(devfd, READ)) {   
 			devbytes = read(devfd, devbuf, DEVBUF_SIZE);
@@ -96,19 +98,30 @@ void serial_onTime(void *arg)
 				devfd = -1;
 				break;
 			} else {
+				memcpy(totalbuf + total, devbuf, devbytes);
 				total += devbytes;
+#if 0
 				pthread_mutex_lock(&rb_mutex);
 			    rbuffer->put(devbuf, devbytes);
 		        pthread_cond_signal(&rb_cond);
         	    pthread_mutex_unlock(&rb_mutex);                
 				dev_log(port.c_str(), devbuf, devbytes);				
+#endif
 			}
 		}
 		
 		if((dev->get_packet_size() > 0) &&
 			(total >= dev->get_packet_size()))
 			break;
-	} 
+	}
+
+	if(total > 0) {
+		pthread_mutex_lock(&rb_mutex);
+		rbuffer->put(totalbuf, total);
+    	pthread_cond_signal(&rb_cond);
+	    pthread_mutex_unlock(&rb_mutex);                
+		dev_log(port.c_str(), totalbuf, total);
+	}
 } 
 
 void* serial_poll_run(void* arg)
