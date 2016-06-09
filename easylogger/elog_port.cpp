@@ -62,10 +62,10 @@ ElogErrCode elog_port_init(void) {
 	time_t cur_t;
 	time(&cur_t);
 
-	char cur[16];
-    memset(cur, 0, 16);
+	char cur[14];
+    memset(cur, 0, 14);
 
-	strftime(cur, 16, "%Y%m%d%H%M%S", localtime(&cur_t));
+	strftime(cur, 14, "%Y%m%d%H%M%S", localtime(&cur_t));
 
 	char filepath[64];
 	memset(filepath, 0, 64);
