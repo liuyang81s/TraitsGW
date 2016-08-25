@@ -2,11 +2,11 @@
 #define TRAITS_DEFINES_H
 
 #define TRAITS_DEBUG_SRV
-#define TRAITS_DEBUG_GW
+//#define TRAITS_DEBUG_GW
 //#define TRAITS_DEBUG_HB
-#define TRAITS_DEBUG_SERIAL
+//#define TRAITS_DEBUG_SERIAL
 
-#define TRAITS_TEST
+//#define TRAITS_TEST
 
 //#define DEBUG_ON_PC
 
