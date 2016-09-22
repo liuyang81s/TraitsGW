@@ -77,7 +77,7 @@ int main()
 
 	TRAITScode ret = TRAITSE_LAST;
 	string filename;
-	string data_url(SERVER_URL);
+	string data_url(DEFAULT_SERVER_URL);
 	data_url.append(DATA_URL);
 	
 	pfmgr = new PacketFileMgr;

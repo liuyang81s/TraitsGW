@@ -98,7 +98,7 @@ int main()
 
 	log_i("GW starting...");
 
-	gw = new TraitsGW(SERVER_URL);
+	gw = new TraitsGW();
 	if(NULL == gw) {
 		log_e("TraitsGW allocation failed");
 		goto GW_ALLOC_ERROR;

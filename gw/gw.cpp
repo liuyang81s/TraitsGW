@@ -34,12 +34,7 @@ bool HB_RUNNING = false;
 
 TraitsGW::TraitsGW()
 {
-	server_url = "http://traits.imwork.net:10498/AnalyzeServer/system/";
-}
-
-TraitsGW::TraitsGW(const string& url)
-{
-	server_url = url;
+	server_url = DEFAULT_SERVER_URL;
 }
 
 TRAITScode TraitsGW::init()
@@ -96,6 +91,20 @@ TRAITScode TraitsGW::init()
 #endif
 	if(port.empty())	
 		return TRAITSE_CONFIG_PARAM_NOT_FOUND;
+
+
+	//read config file, get server url
+    while(!config_file.eof()){
+		getline(config_file, line);
+		if(string::npos != line.find("server")) {
+			server_url = get_attr_from_line(line);
+			break;
+		}
+	}  			
+#ifdef TRAITS_DEBUG_GW
+	cout << "server url = " << server_url << endl;	
+#endif
+	log_i("Server URL: %s", server_url.c_str());
 
 	tmlist = new TimerList();
 	if(NULL == tmlist) {

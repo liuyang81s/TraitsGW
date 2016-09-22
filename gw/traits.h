@@ -35,7 +35,7 @@ typedef enum {
 } TRAITScode;
 
 
-#define SERVER_URL "http://traits.imwork.net:10498/AnalyzeServer/system/"
+#define DEFAULT_SERVER_URL "http://traits.imwork.net:10498/AnalyzeServer/system/"
 #define INIT_URL "init.do"
 #define DATA_URL "data.do"
 #define HB_URL	"refresh.do"
